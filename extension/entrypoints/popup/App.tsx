@@ -12,25 +12,26 @@ function App() {
       currentWindow: true,
     });
     if (!tab?.id) return;
-    browser.tabs.sendMessage(
-      tab.id,
-      { action: 'clip-job' },
-      async (response) => {
-        console.log(response);
-        if (response?.job) {
-          await saveJob({
-            ...response.job,
-            column: 'to_apply',
-            status: 'active',
-          });
-          // loadJobs();
-        } else {
-          alert(
-            'Could not detect a job on this page. Make sure you are on a LinkedIn or Indeed job posting.',
-          );
-        }
-      },
-    );
+    try {
+      const response = await browser.tabs.sendMessage(tab.id, {
+        action: 'clip-job',
+      });
+      if (response?.job) {
+        await saveJob({
+          ...response.job,
+          column: 'to_apply',
+          status: 'active',
+        });
+      } else {
+        alert(
+          'Could not detect a job on this page. Make sure you are on a LinkedIn or Indeed job posting.',
+        );
+      }
+    } catch {
+      alert(
+        'Could not detect a job on this page. Make sure you are on a LinkedIn or Indeed job posting.',
+      );
+    }
   };
   return (
     <>

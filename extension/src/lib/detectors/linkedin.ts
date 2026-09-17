@@ -68,6 +68,16 @@ function getLinkedInJobId(
 }
 
 export function detectLinkedIn(): DetectedJob | null {
+  const pathname = window.location.pathname;
+  const searchParams = new URLSearchParams(window.location.search);
+  const isLinkedInJob =
+    pathname.includes('/jobs/view/') ||
+    pathname.includes('/jobs/') ||
+    searchParams.has('currentJobId') ||
+    searchParams.has('jobId');
+
+  if (!isLinkedInJob) return null;
+
   const root =
     document.querySelector(
       '.jobs-search__job-details--container, .jobs-details__main-content, .job-view-layout, .details, main',
@@ -79,9 +89,9 @@ export function detectLinkedIn(): DetectedJob | null {
   const jsonLd = parseJsonLd();
 
   const jobId = getLinkedInJobId(root, topCard, jsonLd.jobId);
-  const jobUrl = jobId
-    ? `https://www.linkedin.com/jobs/view/${jobId}/`
-    : window.location.href.split('?')[0];
+  if (!jobId) return null;
+
+  const jobUrl = `https://www.linkedin.com/jobs/view/${jobId}/`;
 
   const title =
     jsonLd.title ||
