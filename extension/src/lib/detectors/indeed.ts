@@ -6,11 +6,6 @@ function getIndeedJobId(): string | undefined {
   const paramId = urlParams.get('vjk') || urlParams.get('jk');
   if (paramId) return paramId;
 
-  const urlMatch = window.location.href.match(
-    /(?:[?&]jk=|\/viewjob\?jk=)([a-zA-Z0-9]+)/,
-  );
-  if (urlMatch?.[1]) return urlMatch[1];
-
   const canonical = document
     .querySelector('link[rel="canonical"]')
     ?.getAttribute('href');
@@ -19,32 +14,17 @@ function getIndeedJobId(): string | undefined {
   );
   if (canonicalMatch?.[1]) return canonicalMatch[1];
 
-  const activeCard = document.querySelector(
-    '.jobsearch-ResultsList .selected [data-jk], [data-jk].selected, .tapItem.selected[data-jk], .vjs-highlight[data-jk]',
-  );
-  const activeCardId = activeCard?.getAttribute('data-jk');
-  if (activeCardId) return activeCardId;
-
-  const pane = document.querySelector(
-    '#jobsearch-ViewJobPaneWrapper, #viewJobSSRRoot, .jobsearch-JobComponent, .jobsearch-RightPane',
-  );
-  const paneJobId =
-    pane?.querySelector('[data-jk]')?.getAttribute('data-jk') ||
-    pane?.getAttribute('data-jk') ||
-    pane?.querySelector('[data-job-key]')?.getAttribute('data-job-key');
-  if (paneJobId) return paneJobId;
-
-  const buttonJobId =
+  return (
+    document
+      .querySelector(
+        '#jobsearch-ViewJobPaneWrapper [data-jk], [data-testid="viewJob-pane"] [data-jk], [data-jk].selected, [data-jk]',
+      )
+      ?.getAttribute('data-jk') ||
     document
       .querySelector('#indeedApplyButton, [data-testid="indeedApplyButton"]')
       ?.getAttribute('data-jobsearch-apply-jobkey') ||
-    document
-      .querySelector('button[data-job-key]')
-      ?.getAttribute('data-job-key') ||
-    document.querySelector('[data-jk]')?.getAttribute('data-jk');
-  if (buttonJobId) return buttonJobId;
-
-  return undefined;
+    undefined
+  );
 }
 
 export function detectIndeed(): DetectedJob | null {

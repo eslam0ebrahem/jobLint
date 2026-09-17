@@ -17,6 +17,13 @@ const getDB = () => dbPromise;
 export const getJobs = async (): Promise<Job[]> =>
   (await getDB()).getAll(STORE);
 
+export const getActiveJobs = async (): Promise<Job[]> => {
+  const jobs = await getJobs();
+  return jobs
+    .filter((j) => j.status === 'active')
+    .sort((a, b) => b.clippedAt.localeCompare(a.clippedAt));
+};
+
 export const getJob = async (id: string): Promise<Job | undefined> =>
   (await getDB()).get(STORE, id);
 

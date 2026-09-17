@@ -1,11 +1,11 @@
 import { saveJob } from '@/src/lib/db';
-import { useState } from 'react';
-
+import { useJobs } from '@/src/hooks/useJobs';
 import { PopupFooter } from '@/src/components/PopupFooter';
 import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0);
+  const { jobs, loading, error, refresh } = useJobs();
+
   const handleClipJob = async () => {
     const [tab] = await browser.tabs.query({
       active: true,
@@ -22,6 +22,7 @@ function App() {
           column: 'to_apply',
           status: 'active',
         });
+        await refresh();
       } else {
         alert(
           'Could not detect a job on this page. Make sure you are on a LinkedIn or Indeed job posting.',
@@ -33,6 +34,7 @@ function App() {
       );
     }
   };
+
   return (
     <>
       <PopupFooter onClipJob={handleClipJob} />

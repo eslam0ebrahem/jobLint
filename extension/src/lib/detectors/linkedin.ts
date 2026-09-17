@@ -15,54 +15,29 @@ function getLinkedInJobId(
   );
   if (pathMatch?.[1]) return pathMatch[1];
 
-  const jobLink =
+  const linkMatch = (
     topCard.querySelector('a[href*="/jobs/view/"]') ||
-    root.querySelector('a[href*="/jobs/view/"]');
-  const linkMatch = jobLink
+    root.querySelector('a[href*="/jobs/view/"]')
+  )
     ?.getAttribute('href')
     ?.match(/\/jobs\/view\/(?:[^\s/?#]+-)?(\d+)/);
   if (linkMatch?.[1]) return linkMatch[1];
 
   const dataJobId =
     (topCard as HTMLElement).getAttribute?.('data-job-id') ||
-    (root as HTMLElement).getAttribute?.('data-job-id') ||
     topCard.querySelector('[data-job-id]')?.getAttribute('data-job-id') ||
     root.querySelector('[data-job-id]')?.getAttribute('data-job-id');
   if (dataJobId && /^\d+$/.test(dataJobId)) return dataJobId;
 
-  const urnEl = (topCard as HTMLElement).getAttribute?.('data-entity-urn')
-    ? topCard
-    : topCard.querySelector(
-        '[data-entity-urn*="jobPosting"], [data-entity-urn*="job:"]',
-      ) ||
-      root.querySelector(
-        '[data-entity-urn*="jobPosting"], [data-entity-urn*="job:"]',
-      );
-  const urn = (urnEl as HTMLElement)?.getAttribute?.('data-entity-urn');
-  const urnMatch = urn?.match(/(?:jobPosting|job):(\d+)/);
+  const urnMatch = (
+    topCard.querySelector('[data-entity-urn]') ||
+    root.querySelector('[data-entity-urn]')
+  )
+    ?.getAttribute('data-entity-urn')
+    ?.match(/(?:jobPosting|job):(\d+)/);
   if (urnMatch?.[1]) return urnMatch[1];
 
-  const activeCard = document.querySelector(
-    '.jobs-search-results-list__list-item--active, .job-card-container--active, [data-occludable-job-id].active',
-  );
-  const activeCardId =
-    activeCard?.getAttribute('data-job-id') ||
-    activeCard?.getAttribute('data-occludable-job-id') ||
-    activeCard?.querySelector('[data-job-id]')?.getAttribute('data-job-id') ||
-    activeCard
-      ?.querySelector('a[href*="/jobs/view/"]')
-      ?.getAttribute('href')
-      ?.match(/\/jobs\/view\/(?:[^\s/?#]+-)?(\d+)/)?.[1];
-  if (activeCardId && /^\d+$/.test(activeCardId)) return activeCardId;
-
   if (jsonLdJobId && /^\d+$/.test(jsonLdJobId)) return jsonLdJobId;
-
-  const globalJobId =
-    document
-      .querySelector('[data-current-job-id]')
-      ?.getAttribute('data-current-job-id') ||
-    document.querySelector('[data-job-id]')?.getAttribute('data-job-id');
-  if (globalJobId && /^\d+$/.test(globalJobId)) return globalJobId;
 
   return undefined;
 }
