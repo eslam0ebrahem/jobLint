@@ -7,6 +7,10 @@ export function Header({ count }: Props) {
     browser.tabs.create({ url: browser.runtime.getURL('/dashboard.html') });
   };
 
+  const openOptions = () => {
+    browser.runtime.openOptionsPage();
+  };
+
   return (
     <header className="flex justify-between items-center pb-2 border-b border-slate-200 mb-2">
       <div className="flex items-center gap-2">
@@ -15,13 +19,22 @@ export function Header({ count }: Props) {
           {count} saved
         </span>
       </div>
-      <button
-        onClick={openDashboard}
-        title="Open Dashboard"
-        className="p-1 border border-slate-300 rounded hover:bg-slate-100 text-xs transition-colors cursor-pointer"
-      >
-        📊
-      </button>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={openOptions}
+          title="AI Settings"
+          className="p-1 border border-slate-300 rounded hover:bg-slate-100 text-xs transition-colors cursor-pointer"
+        >
+          ⚙️
+        </button>
+        <button
+          onClick={openDashboard}
+          title="Open Dashboard"
+          className="p-1 border border-slate-300 rounded hover:bg-slate-100 text-xs transition-colors cursor-pointer"
+        >
+          📊
+        </button>
+      </div>
     </header>
   );
 }
