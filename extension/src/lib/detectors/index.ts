@@ -9,7 +9,7 @@ export function detectJob(): DetectionResult | null {
   const { hostname } = window.location;
   const job = hostname.includes('linkedin.com')
     ? detectLinkedIn()
-    : hostname.includes('indeed.com')
+    : hostname.includes('indeed.')
       ? detectIndeed()
       : null;
 

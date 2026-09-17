@@ -1,45 +1,47 @@
-import { saveJob } from '@/src/lib/db';
+import { useState } from 'react';
+import { saveJob, deleteJob } from '@/src/lib/db';
 import { useJobs } from '@/src/hooks/useJobs';
-import { PopupFooter } from '@/src/components/PopupFooter';
+import { Header } from '@/src/components/Header';
+import { JobList } from '@/src/components/JobList';
+import { Footer } from '@/src/components/Footer';
 import './App.css';
 
-function App() {
-  const { jobs, loading, error, refresh } = useJobs();
+export default function App() {
+  const { jobs, loading, refresh } = useJobs();
+  const [feedback, setFeedback] = useState<string | null>(null);
 
-  const handleClipJob = async () => {
-    const [tab] = await browser.tabs.query({
-      active: true,
-      currentWindow: true,
-    });
+  const handleClip = async () => {
+    setFeedback(null);
+    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     if (!tab?.id) return;
+
     try {
-      const response = await browser.tabs.sendMessage(tab.id, {
-        action: 'clip-job',
-      });
-      if (response?.job) {
-        await saveJob({
-          ...response.job,
-          column: 'to_apply',
-          status: 'active',
-        });
+      const res = await browser.tabs.sendMessage(tab.id, { action: 'clip-job' });
+      if (res?.job) {
+        const { isNew } = await saveJob({ ...res.job, column: 'to_apply', status: 'active' });
         await refresh();
+        setFeedback(isNew ? `Saved: ${res.job.title}` : `Updated: ${res.job.title}`);
+        setTimeout(() => setFeedback(null), 3000);
       } else {
-        alert(
-          'Could not detect a job on this page. Make sure you are on a LinkedIn or Indeed job posting.',
-        );
+        alert('No job detected on this page.');
       }
     } catch {
-      alert(
-        'Could not detect a job on this page. Make sure you are on a LinkedIn or Indeed job posting.',
-      );
+      alert('Could not connect. Refresh the job page and try again.');
     }
   };
 
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    await deleteJob(id);
+    await refresh();
+  };
+
   return (
-    <>
-      <PopupFooter onClipJob={handleClipJob} />
-    </>
+    <div className="popup-container">
+      <Header count={jobs.length} />
+      {feedback && <div className="success-banner">✓ {feedback}</div>}
+      <JobList jobs={jobs} loading={loading} onDelete={handleDelete} />
+      <Footer onClip={handleClip} />
+    </div>
   );
 }
-
-export default App;
