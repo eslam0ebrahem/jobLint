@@ -4,7 +4,6 @@ import { useJobs } from '@/src/hooks/useJobs';
 import { Header } from '@/src/components/Header';
 import { JobList } from '@/src/components/JobList';
 import { Footer } from '@/src/components/Footer';
-import './App.css';
 
 export default function App() {
   const { jobs, loading, refresh } = useJobs();
@@ -37,9 +36,13 @@ export default function App() {
   };
 
   return (
-    <div className="popup-container">
+    <div className="w-[340px] p-3 flex flex-col font-sans bg-white text-slate-900 box-border">
       <Header count={jobs.length} />
-      {feedback && <div className="success-banner">✓ {feedback}</div>}
+      {feedback && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs px-2.5 py-1.5 rounded-md mb-2 font-medium">
+          ✓ {feedback}
+        </div>
+      )}
       <JobList jobs={jobs} loading={loading} onDelete={handleDelete} />
       <Footer onClip={handleClip} />
     </div>

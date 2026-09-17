@@ -1,4 +1,4 @@
-import type { Job, NewJob } from '@/src/types/job';
+import type { Job, NewJob, Column } from '@/src/types/job';
 import { openDB } from 'idb';
 
 const dbPromise = openDB('joblint-db', 5, {
@@ -8,21 +8,16 @@ const dbPromise = openDB('joblint-db', 5, {
   },
 });
 
-export const getActiveJobs = async (): Promise<Job[]> =>
-  (await dbPromise)
-    .getAll('jobs')
-    .then((list) =>
-      list
-        .filter((j) => j.status === 'active')
-        .sort((a, b) => b.clippedAt.localeCompare(a.clippedAt)),
-    );
+export const getActiveJobs = async (): Promise<Job[]> => {
+  const jobs: Job[] = await (await dbPromise).getAll('jobs');
+  return jobs
+    .filter((j) => j.status === 'active')
+    .sort((a, b) => b.clippedAt.localeCompare(a.clippedAt));
+};
 
-export const saveJob = async (
-  job: Partial<Job> & NewJob,
-): Promise<{ id: string; isNew: boolean }> => {
+export const saveJob = async (job: Partial<Job> & NewJob) => {
   const db = await dbPromise;
-  const id =
-    job.id || (job.jobId ? `${job.source}-${job.jobId}` : crypto.randomUUID());
+  const id = job.id || (job.jobId ? `${job.source}-${job.jobId}` : crypto.randomUUID());
   const existing = await db.get('jobs', id);
   const now = new Date().toISOString();
 
@@ -30,9 +25,6 @@ export const saveJob = async (
     ...existing,
     ...job,
     id,
-    column: existing?.column || job.column || 'to_apply',
-    status: existing?.status || job.status || 'active',
-    notes: existing?.notes ?? job.notes,
     clippedAt: existing?.clippedAt || now,
     createdAt: existing?.createdAt || now,
     updatedAt: now,
@@ -41,6 +33,10 @@ export const saveJob = async (
   return { id, isNew: !existing };
 };
 
-export const deleteJob = async (id: string): Promise<void> => {
-  (await dbPromise).delete('jobs', id);
+export const updateJobColumn = async (id: string, column: Column) => {
+  const db = await dbPromise;
+  const job = await db.get('jobs', id);
+  if (job) await db.put('jobs', { ...job, column, updatedAt: new Date().toISOString() });
 };
+
+export const deleteJob = async (id: string) => (await dbPromise).delete('jobs', id);

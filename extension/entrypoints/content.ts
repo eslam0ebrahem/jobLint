@@ -15,10 +15,8 @@ export default defineContentScript({
   ],
   runAt: 'document_idle',
   main() {
-    browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-      if (message.action === 'clip-job') {
-        sendResponse(detectJob());
-      }
+    browser.runtime.onMessage.addListener((msg, _, send) => {
+      if (msg.action === 'clip-job') send(detectJob());
     });
   },
 });

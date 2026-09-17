@@ -8,11 +8,13 @@ interface Props {
 }
 
 export function JobList({ jobs, loading, onDelete }: Props) {
-  if (loading) return <div className="empty-state">Loading jobs...</div>;
-  if (jobs.length === 0) return <div className="empty-state">No jobs saved yet.</div>;
+  if (loading)
+    return <div className="text-center text-slate-400 text-xs py-5">Loading jobs...</div>;
+  if (jobs.length === 0)
+    return <div className="text-center text-slate-400 text-xs py-5">No jobs saved yet.</div>;
 
   return (
-    <div className="job-list">
+    <div className="flex flex-col gap-2 max-h-72 overflow-y-auto mb-2.5 pr-0.5">
       {jobs.map((job) => (
         <JobCard key={job.id} job={job} onDelete={onDelete} />
       ))}
