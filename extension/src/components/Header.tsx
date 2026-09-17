@@ -7,6 +7,10 @@ export function Header({ count }: Props) {
     browser.tabs.create({ url: browser.runtime.getURL('/dashboard.html') });
   };
 
+  const openProfile = () => {
+    browser.tabs.create({ url: browser.runtime.getURL('/profile.html') });
+  };
+
   const openOptions = () => {
     browser.runtime.openOptionsPage();
   };
@@ -20,6 +24,13 @@ export function Header({ count }: Props) {
         </span>
       </div>
       <div className="flex items-center gap-1">
+        <button
+          onClick={openProfile}
+          title="Candidate Profile"
+          className="p-1 border border-slate-300 rounded hover:bg-slate-100 text-xs transition-colors cursor-pointer"
+        >
+          👤
+        </button>
         <button
           onClick={openOptions}
           title="AI Settings"

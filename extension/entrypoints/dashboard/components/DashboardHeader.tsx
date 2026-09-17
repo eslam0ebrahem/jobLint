@@ -5,6 +5,10 @@ interface Props {
 }
 
 export function DashboardHeader({ totalJobs, search, onSearchChange }: Props) {
+  const openProfile = () => {
+    browser.tabs.create({ url: browser.runtime.getURL('/profile.html') });
+  };
+
   const openOptions = () => {
     browser.runtime.openOptionsPage();
   };
@@ -27,6 +31,14 @@ export function DashboardHeader({ totalJobs, search, onSearchChange }: Props) {
           onChange={(e) => onSearchChange(e.target.value)}
           className="w-full sm:w-64 px-3 py-1.5 text-xs border border-slate-300 rounded-lg outline-none focus:border-indigo-500 transition-colors bg-white"
         />
+        <button
+          onClick={openProfile}
+          title="Candidate Profile"
+          className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+        >
+          <span>👤</span>
+          <span className="hidden sm:inline">Profile</span>
+        </button>
         <button
           onClick={openOptions}
           title="AI Settings"
