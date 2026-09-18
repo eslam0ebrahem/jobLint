@@ -22,7 +22,7 @@ export const detectLegitimacy = (redFlags: string[]) =>
       : 'High Confidence') as 'High Confidence' | 'Proceed with Caution' | 'Suspicious';
 
 export function calculateGlobalScore(matchScore: number, locScore: number, roleScore: number, redFlags: string[]) {
-  let score = matchScore * 0.5 + locScore * 0.25 + roleScore * 0.25 - (redFlags.length ? 0.8 * redFlags.length : 0);
+  const score = matchScore * 0.5 + locScore * 0.25 + roleScore * 0.25 - (redFlags.length ? 0.8 * redFlags.length : 0);
   return Math.min(5, Math.max(1, Math.round(score * 10) / 10));
 }
 

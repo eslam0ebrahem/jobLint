@@ -37,7 +37,14 @@ export async function fetchAiModels(
     const data = await res.json().catch(() => ({}));
     const rawList = Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
     const models: string[] = rawList
-      .map((m: any) => m.id || m.name || (typeof m === 'string' ? m : ''))
+      .map((m: unknown) => {
+        if (typeof m === 'string') return m;
+        if (m && typeof m === 'object') {
+          const obj = m as Record<string, unknown>;
+          return String(obj.id || obj.name || '');
+        }
+        return '';
+      })
       .filter(Boolean)
       .sort();
 
@@ -46,8 +53,9 @@ export async function fetchAiModels(
     }
 
     return { success: true, models };
-  } catch (err: any) {
-    return { success: false, models: [], error: err.message || 'Failed to connect to endpoint' };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : 'Failed to connect to endpoint';
+    return { success: false, models: [], error: errorMsg };
   }
 }
 
@@ -87,7 +95,8 @@ export async function testAiConnection(
       success: true,
       message: `Connected successfully! Model responded: "${reply || 'OK'}"`,
     };
-  } catch (err: any) {
-    return { success: false, message: err.message || 'Connection failed. Check your Base URL and network.' };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : 'Connection failed. Check your Base URL and network.';
+    return { success: false, message: errorMsg };
   }
 }
