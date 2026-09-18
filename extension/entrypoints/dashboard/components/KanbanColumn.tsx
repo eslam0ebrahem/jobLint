@@ -8,6 +8,8 @@ interface Props {
   onDrop: (col: Column, e: React.DragEvent) => void;
   onMove: (id: string, col: Column) => void;
   onDelete: (id: string) => void;
+  onEvaluate?: (job: Job) => void;
+  evaluatingId?: string | null;
 }
 
 export function KanbanColumn({
@@ -16,6 +18,8 @@ export function KanbanColumn({
   onDrop,
   onMove,
   onDelete,
+  onEvaluate,
+  evaluatingId,
 }: Props) {
   return (
     <div
@@ -45,6 +49,8 @@ export function KanbanColumn({
               job={job}
               onMove={onMove}
               onDelete={onDelete}
+              onEvaluate={onEvaluate}
+              isEvaluating={evaluatingId === job.id}
             />
           ))
         )}

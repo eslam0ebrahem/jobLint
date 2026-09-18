@@ -1,6 +1,7 @@
 import { useJobs } from '@/src/hooks/useJobs';
-import { deleteJob, updateJobColumn } from '@/src/lib/db';
-import type { Column } from '@/src/types/job';
+import { deleteJob, updateJobColumn, saveJob } from '@/src/lib/db';
+import { evaluateJobWithAi } from '@/src/lib/evaluator';
+import type { Column, Job } from '@/src/types/job';
 import { useState } from 'react';
 import { DashboardHeader } from './components/DashboardHeader';
 import { KanbanColumn } from './components/KanbanColumn';
@@ -9,6 +10,7 @@ import { COLUMNS } from './constants';
 export default function App() {
   const { jobs, loading, refresh } = useJobs();
   const [search, setSearch] = useState('');
+  const [evaluatingId, setEvaluatingId] = useState<string | null>(null);
 
   const handleDrop = async (col: Column, e: React.DragEvent) => {
     e.preventDefault();
@@ -29,6 +31,21 @@ export default function App() {
     if (confirm('Delete this job?')) {
       await deleteJob(id);
       await refresh();
+    }
+  };
+
+  const handleEvaluate = async (job: Job) => {
+    setEvaluatingId(job.id);
+    try {
+      const res = await browser.storage.local.get('profile');
+      const profile = (res.profile as Record<string, string>) || {};
+      const evaluation = await evaluateJobWithAi(job, profile);
+      await saveJob({ ...job, evaluation });
+      await refresh();
+    } catch {
+      alert('Could not evaluate job.');
+    } finally {
+      setEvaluatingId(null);
     }
   };
 
@@ -60,6 +77,8 @@ export default function App() {
               onDrop={handleDrop}
               onMove={handleMove}
               onDelete={handleDelete}
+              onEvaluate={handleEvaluate}
+              evaluatingId={evaluatingId}
             />
           ))}
         </div>

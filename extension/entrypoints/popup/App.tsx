@@ -6,13 +6,14 @@ import { JobList } from '@/src/components/JobList';
 import { Footer } from '@/src/components/Footer';
 import { EvaluationCard } from '@/src/components/EvaluationCard';
 import { evaluateJobWithAi } from '@/src/lib/evaluator';
-import type { DetectedJob, JobEvaluation } from '@/src/types/job';
+import type { DetectedJob, Job, JobEvaluation } from '@/src/types/job';
 
 export default function App() {
   const { jobs, loading, refresh } = useJobs();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [evaluatingJob, setEvaluatingJob] = useState<(DetectedJob & { evaluation: JobEvaluation }) | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
+  const [evaluatingCardId, setEvaluatingCardId] = useState<string | null>(null);
 
   const getProfile = async () => {
     const res = await browser.storage.local.get('profile');
@@ -62,14 +63,26 @@ export default function App() {
         alert('No job detected on this page.');
         return;
       }
-      const profile = await getProfile();
-      const evaluation = await evaluateJobWithAi(job, profile);
-      const { isNew } = await saveJob({ ...job, evaluation, column: 'to_apply', status: 'active' });
+      const { isNew } = await saveJob({ ...job, column: 'to_apply', status: 'active' });
       await refresh();
-      setFeedback(isNew ? `Saved: ${job.title}` : `Updated: ${job.title}`);
+      setFeedback(isNew ? `Clipped: ${job.title}` : `Updated: ${job.title}`);
       setTimeout(() => setFeedback(null), 3000);
     } catch {
       alert('Could not connect. Refresh the job page and try again.');
+    }
+  };
+
+  const handleEvaluateCard = async (job: Job) => {
+    setEvaluatingCardId(job.id);
+    try {
+      const profile = await getProfile();
+      const evaluation = await evaluateJobWithAi(job, profile);
+      await saveJob({ ...job, evaluation });
+      await refresh();
+    } catch {
+      alert('Evaluation failed. Please check your settings or network.');
+    } finally {
+      setEvaluatingCardId(null);
     }
   };
 
@@ -95,7 +108,13 @@ export default function App() {
         />
       ) : (
         <>
-          <JobList jobs={jobs} loading={loading} onDelete={handleDelete} />
+          <JobList
+            jobs={jobs}
+            loading={loading}
+            onDelete={handleDelete}
+            onEvaluate={handleEvaluateCard}
+            evaluatingId={evaluatingCardId}
+          />
           <Footer onClip={handleClip} onEvaluate={handleEvaluate} evaluating={isEvaluating} />
         </>
       )}

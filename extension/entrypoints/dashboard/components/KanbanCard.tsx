@@ -5,13 +5,18 @@ interface Props {
   job: Job;
   onMove: (id: string, col: Column) => void;
   onDelete: (id: string) => void;
+  onEvaluate?: (job: Job) => void;
+  isEvaluating?: boolean;
 }
 
-export function KanbanCard({ job, onMove, onDelete }: Props) {
+export function KanbanCard({ job, onMove, onDelete, onEvaluate, isEvaluating }: Props) {
+  const e = job.evaluation;
+  const matched = Array.isArray(e?.matchedSkills) ? e.matchedSkills : [];
+
   return (
     <div
       draggable
-      onDragStart={(e) => e.dataTransfer.setData('text/plain', job.id)}
+      onDragStart={(ev) => ev.dataTransfer.setData('text/plain', job.id)}
       className="bg-white border border-slate-200 rounded-lg p-3 shadow-xs hover:shadow-md hover:border-slate-300 transition-all cursor-grab active:cursor-grabbing shrink-0"
     >
       <div className="flex justify-between items-start gap-1.5 mb-1">
@@ -36,21 +41,22 @@ export function KanbanCard({ job, onMove, onDelete }: Props) {
         {job.company} {job.location ? `• ${job.location}` : ''}
       </p>
 
-      <div className="flex gap-1.5 flex-wrap mb-2">
+      {/* Badges: Source, Verdict, Salary */}
+      <div className="flex gap-1.5 flex-wrap items-center mb-1.5">
         <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded capitalize bg-indigo-100 text-indigo-800">
           {job.source}
         </span>
-        {job.evaluation?.verdictLabel && (
+        {e?.verdictLabel && (
           <span
             className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-              job.evaluation.verdict === 'Apply'
+              e.verdict === 'Apply'
                 ? 'bg-emerald-100 text-emerald-800'
-                : job.evaluation.verdict === 'Caution'
+                : e.verdict === 'Caution'
                   ? 'bg-amber-100 text-amber-800'
                   : 'bg-rose-100 text-rose-800'
             }`}
           >
-            {job.evaluation.verdictLabel} ({job.evaluation.score})
+            {e.verdictLabel} ({e.score})
           </span>
         )}
         {job.salary && (
@@ -60,9 +66,62 @@ export function KanbanCard({ job, onMove, onDelete }: Props) {
         )}
       </div>
 
+      {/* Evaluation Tags: Archetype, Seniority, Level, Remote */}
+      {e && (
+        <div className="flex gap-1 flex-wrap items-center mb-1.5 text-[10px] font-medium text-slate-600">
+          {e.archetype && <span className="bg-slate-100 px-1.5 py-0.5 rounded">{e.archetype}</span>}
+          {e.seniority && <span className="bg-slate-100 px-1.5 py-0.5 rounded">{e.seniority}</span>}
+          {e.level && (
+            <span className="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-semibold">
+              🏷️ {e.level}
+            </span>
+          )}
+          {e.remote && <span className="bg-slate-100 px-1.5 py-0.5 rounded">{e.remote}</span>}
+        </div>
+      )}
+
+      {/* Matched Skills */}
+      {matched.length > 0 && (
+        <div className="flex gap-1 flex-wrap items-center mb-2">
+          {matched.slice(0, 3).map((s) => (
+            <span
+              key={s}
+              className="text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-1.5 py-0.2 rounded font-medium"
+            >
+              ✓ {s}
+            </span>
+          ))}
+          {matched.length > 3 && (
+            <span className="text-[9px] text-slate-400 font-medium">+{matched.length - 3}</span>
+          )}
+        </div>
+      )}
+
+      {/* Evaluate / Re-evaluate */}
+      {!e ? (
+        <button
+          onClick={() => onEvaluate?.(job)}
+          disabled={isEvaluating}
+          className="w-full mb-2 py-1 px-2 rounded bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 text-indigo-700 text-[11px] font-semibold border border-indigo-200 flex items-center justify-center gap-1 cursor-pointer transition-colors disabled:opacity-50"
+        >
+          <span>⚡</span> {isEvaluating ? 'Evaluating...' : 'Evaluate'}
+        </button>
+      ) : (
+        <div className="flex justify-end mb-1.5">
+          <button
+            onClick={() => onEvaluate?.(job)}
+            disabled={isEvaluating}
+            title="Re-evaluate with AI"
+            className="text-[10px] text-slate-400 hover:text-indigo-600 cursor-pointer disabled:opacity-50 flex items-center gap-0.5"
+          >
+            ↻ {isEvaluating ? 'Evaluating...' : 'Re-evaluate'}
+          </button>
+        </div>
+      )}
+
       <select
         value={job.column || 'to_apply'}
-        onChange={(e) => onMove(job.id, e.target.value as Column)}
+        onChange={(ev) => onMove(job.id, ev.target.value as Column)}
         className="w-full text-[11px] text-slate-600 bg-slate-50 border border-slate-200 rounded px-1.5 py-1 outline-none focus:border-blue-500 cursor-pointer"
       >
         {COLUMNS.map((c) => (

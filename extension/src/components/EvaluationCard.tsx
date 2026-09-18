@@ -7,11 +7,17 @@ interface Props {
 }
 
 export function EvaluationCard({ job, onAddToKanban, onCancel }: Props) {
-  const rawEval = job.evaluation as any;
-  const evaluation: JobEvaluation = rawEval?.verdictLabel ? rawEval : rawEval?.evaluation || {};
-  const matchedSkills = Array.isArray(evaluation.matchedSkills) ? evaluation.matchedSkills : [];
-  const missingSkills = Array.isArray(evaluation.missingSkills) ? evaluation.missingSkills : [];
-  const redFlags = Array.isArray(evaluation.redFlags) ? evaluation.redFlags : [];
+  const e = job.evaluation || ({} as Partial<JobEvaluation>);
+  const matched = e.matchedSkills || [];
+  const missing = e.missingSkills || [];
+  const flags = e.redFlags || [];
+
+  const verdictStyles =
+    e.verdict === 'Apply'
+      ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+      : e.verdict === 'Caution'
+        ? 'bg-amber-50 border-amber-200 text-amber-900'
+        : 'bg-rose-50 border-rose-200 text-rose-900';
 
   return (
     <div className="flex flex-col space-y-2 text-slate-800 text-xs">
@@ -22,79 +28,45 @@ export function EvaluationCard({ job, onAddToKanban, onCancel }: Props) {
         </p>
       </div>
 
-      {/* Verdict & Score */}
-      <div
-        className={`p-2 rounded-lg border flex items-center justify-between font-bold ${
-          evaluation.verdict === 'Apply'
-            ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
-            : evaluation.verdict === 'Caution'
-              ? 'bg-amber-50 border-amber-200 text-amber-900'
-              : 'bg-rose-50 border-rose-200 text-rose-900'
-        }`}
-      >
+      <div className={`p-2 rounded-lg border flex items-center justify-between font-bold ${verdictStyles}`}>
         <div className="flex items-center gap-1.5">
-          <span>{evaluation.verdictLabel || 'Evaluation'}</span>
-          {evaluation.aiEnhanced && (
-            <span className="text-[9px] px-1.5 py-0.2 rounded bg-indigo-600 text-white font-semibold uppercase tracking-wider">
+          <span>{e.verdictLabel || 'Evaluation'}</span>
+          {e.aiEnhanced && (
+            <span className="text-[9px] px-1.5 py-0.2 rounded bg-indigo-600 text-white uppercase tracking-wider">
               AI
             </span>
           )}
         </div>
         <span className="px-2 py-0.5 rounded bg-white/90 border border-current text-[11px]">
-          {evaluation.score ?? 3.0} / 5.0
+          {e.score ?? 3.0} / 5.0
         </span>
       </div>
 
-      {/* Meta tags */}
       <div className="flex gap-1.5 flex-wrap text-[10px] font-semibold text-slate-600">
-        {evaluation.archetype && (
-          <span className="bg-slate-100 px-1.5 py-0.5 rounded">
-            {evaluation.archetype}
-          </span>
-        )}
-        {evaluation.seniority && (
-          <span className="bg-slate-100 px-1.5 py-0.5 rounded">
-            {evaluation.seniority}
-          </span>
-        )}
-        {evaluation.level && (
-          <span className="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">
-            🏷️ {evaluation.level}
-          </span>
-        )}
-        {evaluation.remote && (
-          <span className="bg-slate-100 px-1.5 py-0.5 rounded">
-            {evaluation.remote}
-          </span>
-        )}
+        {e.archetype && <span className="bg-slate-100 px-1.5 py-0.5 rounded">{e.archetype}</span>}
+        {e.seniority && <span className="bg-slate-100 px-1.5 py-0.5 rounded">{e.seniority}</span>}
+        {e.level && <span className="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">🏷️ {e.level}</span>}
+        {e.remote && <span className="bg-slate-100 px-1.5 py-0.5 rounded">{e.remote}</span>}
       </div>
 
-      {/* Reason */}
-      {evaluation.reason && (
+      {e.reason && (
         <p className="text-[11px] text-slate-600 bg-slate-50 p-1.5 rounded border border-slate-200 italic">
-          "{evaluation.reason}"
+          "{e.reason}"
         </p>
       )}
 
-      {/* Red flags */}
-      {redFlags.length > 0 && (
+      {flags.length > 0 && (
         <div className="p-1.5 rounded bg-amber-50 border border-amber-200 text-[11px] text-amber-800">
-          ⚠️ {redFlags.join(', ')}
+          ⚠️ {flags.join(', ')}
         </div>
       )}
 
-      {/* Skills */}
       <div className="space-y-1">
-        <div className="text-[11px] font-semibold text-slate-700">
-          Matched Skills
-        </div>
+        <div className="text-[11px] font-semibold text-slate-700">Matched Skills</div>
         <div className="flex flex-wrap gap-1">
-          {matchedSkills.length > 0 ? (
-            matchedSkills.map((s) => (
-              <span
-                key={s}
-                className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-medium"
-              >
+          {matched.length ? (
+            matched.map((s) => (
+              <span key={s} className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-medium">
                 ✓ {s}
               </span>
             ))
@@ -104,16 +76,12 @@ export function EvaluationCard({ job, onAddToKanban, onCancel }: Props) {
         </div>
       </div>
 
-      {/* Gaps */}
-      {missingSkills.length > 0 && (
+      {missing.length > 0 && (
         <div className="space-y-1">
           <div className="text-[11px] font-semibold text-slate-700">Gaps</div>
           <div className="flex flex-wrap gap-1">
-            {missingSkills.slice(0, 6).map((s) => (
-              <span
-                key={s}
-                className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-medium"
-              >
+            {missing.slice(0, 6).map((s) => (
+              <span key={s} className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-medium">
                 ✕ {s}
               </span>
             ))}
@@ -121,7 +89,6 @@ export function EvaluationCard({ job, onAddToKanban, onCancel }: Props) {
         </div>
       )}
 
-      {/* Action buttons */}
       <div className="pt-2 border-t border-slate-100 flex gap-2">
         <button
           onClick={onCancel}

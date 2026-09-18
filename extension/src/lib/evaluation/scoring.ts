@@ -1,98 +1,40 @@
-/**
- * scoring.ts — Red flags, legitimacy, location scoring, global score, verdict, and rank reasoning.
- * Inspired by career-ops/evaluate-jobs.mjs, rank-pipeline.mjs, and batch-evaluate-gemini.mjs
- */
-
-export function detectRedFlags(
-  text: string,
-  seniority: string,
-  targetRoles?: string
-): string[] {
-  const flags: string[] = [];
-  const t = text.toLowerCase();
-
-  if (/unpaid|sin remunerar|volunteer|no salary/i.test(t)) {
-    flags.push('Unpaid or volunteer role');
-  }
-  if (/5\+\s*years?/i.test(t) && /junior|entry/i.test(t)) {
-    flags.push('5+ years required for junior role');
-  }
-  if (seniority === 'Lead / Staff' && targetRoles && /junior|entry|mid/i.test(targetRoles)) {
-    flags.push('High seniority (Staff/Lead vs Junior/Mid target)');
-  }
-  if (/commission\s*only/i.test(t)) {
-    flags.push('Commission only compensation');
-  }
-
+export function detectRedFlags(t: string, seniority: string, targets = '') {
+  const s = t.toLowerCase(), flags: string[] = [];
+  if (/unpaid|sin remunerar|volunteer|commission\s*only/.test(s)) flags.push('Unpaid / Commission role');
+  if (/5\+\s*years?/.test(s) && /junior|entry/.test(s)) flags.push('5+ years required for junior role');
+  if (seniority === 'Lead / Staff' && /junior|entry|mid/.test(targets.toLowerCase())) flags.push('Staff/Lead role vs Junior target');
   return flags;
 }
 
-export function detectLegitimacy(
-  text: string,
-  redFlags: string[]
-): 'High Confidence' | 'Proceed with Caution' | 'Suspicious' {
-  if (redFlags.some((f) => /unpaid|commission/i.test(f))) return 'Suspicious';
-  if (redFlags.length > 0 || /reposted\s+30\+|over\s+200\s+applicants/i.test(text)) {
-    return 'Proceed with Caution';
-  }
-  return 'High Confidence';
-}
+export const detectLocationScore = (jobLoc = '', candidateLoc = '') => {
+  const j = jobLoc.toLowerCase(), c = candidateLoc.toLowerCase().split(',')[0]?.trim() || '';
+  if (!j || /remote|remoto/.test(j)) return 5;
+  if (c && j.includes(c)) return 5;
+  if (/spain|españa/.test(j) && /spain|españa/.test(c)) return 5;
+  return /emea|europe|eu/.test(j) ? 4 : 3;
+};
 
-export function detectLocationScore(jobLoc?: string, candidateLoc?: string): number {
-  if (!jobLoc) return 4;
-  const j = jobLoc.toLowerCase();
-  if (j.includes('remote') || j.includes('remoto')) return 5;
-  if (candidateLoc) {
-    const c = candidateLoc.toLowerCase();
-    const city = c.split(',')[0]?.trim();
-    if (city && j.includes(city)) return 5;
-    if ((j.includes('spain') || j.includes('españa')) && (c.includes('spain') || c.includes('españa'))) return 5;
-    if (j.includes('emea') || j.includes('europe') || j.includes('eu')) return 4;
-  }
-  return 3;
-}
+export const detectLegitimacy = (redFlags: string[]) =>
+  (redFlags.some((f) => /unpaid|commission/i.test(f))
+    ? 'Suspicious'
+    : redFlags.length
+      ? 'Proceed with Caution'
+      : 'High Confidence') as 'High Confidence' | 'Proceed with Caution' | 'Suspicious';
 
-export function calculateGlobalScore(
-  matchScore: number,
-  locScore: number,
-  roleScore: number,
-  redFlags: string[]
-): number {
-  // Weighted blend: 50% skills, 25% location, 25% target role alignment
-  let score = matchScore * 0.5 + locScore * 0.25 + roleScore * 0.25;
-  if (redFlags.length > 0) {
-    score = Math.max(1, score - 0.7 * redFlags.length);
-  }
+export function calculateGlobalScore(matchScore: number, locScore: number, roleScore: number, redFlags: string[]) {
+  let score = matchScore * 0.5 + locScore * 0.25 + roleScore * 0.25 - (redFlags.length ? 0.8 * redFlags.length : 0);
   return Math.min(5, Math.max(1, Math.round(score * 10) / 10));
 }
 
-export function getVerdict(score: number): { verdict: 'Apply' | 'Caution' | 'Skip'; verdictLabel: string } {
-  if (score >= 4.0) return { verdict: 'Apply', verdictLabel: '🟢 Apply' };
-  if (score >= 3.5) return { verdict: 'Caution', verdictLabel: '🟡 Apply with caution' };
-  return { verdict: 'Skip', verdictLabel: '🔴 Skip' };
-}
+export const getVerdict = (score: number) => ({
+  verdict: (score >= 4 ? 'Apply' : score >= 3.5 ? 'Caution' : 'Skip') as 'Apply' | 'Caution' | 'Skip',
+  verdictLabel: score >= 4 ? '🟢 Apply' : score >= 3.5 ? '🟡 Apply with caution' : '🔴 Skip',
+});
 
-export function generateRankReason(
-  score: number,
-  archetype: string,
-  matchedSkills: string[],
-  missingSkills: string[],
-  redFlags: string[],
-  roleMatch: boolean
-): string {
-  if (redFlags.length > 0) {
-    return `Caution: ${redFlags[0]}. ${matchedSkills.slice(0, 2).join(', ')} found.`.slice(0, 140);
-  }
-  if (!roleMatch) {
-    return `Role mismatch for target roles, though ${matchedSkills.slice(0, 2).join(', ')} matched.`.slice(0, 140);
-  }
-  if (score >= 4.0) {
-    const skillsText = matchedSkills.slice(0, 3).join(', ');
-    return `Strong ${archetype} match (${skillsText || 'core stack'}) with high profile alignment.`.slice(0, 140);
-  }
-  if (score >= 3.5) {
-    const missingText = missingSkills.slice(0, 2).join(', ');
-    return `Good ${archetype} fit, but missing ${missingText || 'some stack requirements'}.`.slice(0, 140);
-  }
-  return `Weak alignment with profile; missing ${missingSkills.slice(0, 3).join(', ') || 'key requirements'}.`.slice(0, 140);
+export function generateRankReason(score: number, archetype: string, matched: string[], gaps: string[], flags: string[], roleMatch: boolean) {
+  if (flags.length) return `Caution: ${flags[0]}. ${matched.slice(0, 2).join(', ')} found.`.slice(0, 140);
+  if (!roleMatch) return `Role mismatch for target roles, though ${matched.slice(0, 2).join(', ')} matched.`.slice(0, 140);
+  return score >= 4
+    ? `Strong ${archetype} match (${matched.slice(0, 3).join(', ') || 'core stack'}) with high profile alignment.`.slice(0, 140)
+    : `Good ${archetype} fit, but missing ${gaps.slice(0, 2).join(', ') || 'requirements'}.`.slice(0, 140);
 }
