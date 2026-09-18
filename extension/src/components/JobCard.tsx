@@ -34,7 +34,7 @@ export function JobCard({ job, onDelete }: Props) {
         <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded capitalize bg-indigo-100 text-indigo-800">
           {job.source}
         </span>
-        {job.evaluation && (
+        {job.evaluation?.verdictLabel && (
           <span
             className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
               job.evaluation.verdict === 'Apply'

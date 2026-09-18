@@ -77,7 +77,18 @@ Rules:
     if (!res.ok) {
       const errJson = await res.json().catch(() => ({}));
       const errMsg = errJson.error?.message || errJson.message || `HTTP ${res.status}: ${res.statusText}`;
-      return { success: false, evaluation: fallback, error: `API error: ${errMsg}` };
+      console.warn(`[JobLint AI] API error ${res.status}: ${errMsg}`);
+      const isPayment = res.status === 402;
+      return {
+        success: false,
+        evaluation: {
+          ...fallback,
+          reason: isPayment
+            ? `${fallback.reason} (AI credits exhausted: 402 Payment Required)`.slice(0, 140)
+            : fallback.reason,
+        },
+        error: isPayment ? 'AI credits exhausted (402 Payment Required)' : `API error: ${errMsg}`,
+      };
     }
 
     const data = await res.json();

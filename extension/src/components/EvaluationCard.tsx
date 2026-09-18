@@ -7,7 +7,11 @@ interface Props {
 }
 
 export function EvaluationCard({ job, onAddToKanban, onCancel }: Props) {
-  const { evaluation } = job;
+  const rawEval = job.evaluation as any;
+  const evaluation: JobEvaluation = rawEval?.verdictLabel ? rawEval : rawEval?.evaluation || {};
+  const matchedSkills = Array.isArray(evaluation.matchedSkills) ? evaluation.matchedSkills : [];
+  const missingSkills = Array.isArray(evaluation.missingSkills) ? evaluation.missingSkills : [];
+  const redFlags = Array.isArray(evaluation.redFlags) ? evaluation.redFlags : [];
 
   return (
     <div className="flex flex-col space-y-2 text-slate-800 text-xs">
@@ -18,6 +22,7 @@ export function EvaluationCard({ job, onAddToKanban, onCancel }: Props) {
         </p>
       </div>
 
+      {/* Verdict & Score */}
       <div
         className={`p-2 rounded-lg border flex items-center justify-between font-bold ${
           evaluation.verdict === 'Apply'
@@ -28,7 +33,7 @@ export function EvaluationCard({ job, onAddToKanban, onCancel }: Props) {
         }`}
       >
         <div className="flex items-center gap-1.5">
-          <span>{evaluation.verdictLabel}</span>
+          <span>{evaluation.verdictLabel || 'Evaluation'}</span>
           {evaluation.aiEnhanced && (
             <span className="text-[9px] px-1.5 py-0.2 rounded bg-indigo-600 text-white font-semibold uppercase tracking-wider">
               AI
@@ -36,46 +41,56 @@ export function EvaluationCard({ job, onAddToKanban, onCancel }: Props) {
           )}
         </div>
         <span className="px-2 py-0.5 rounded bg-white/90 border border-current text-[11px]">
-          {evaluation.score} / 5.0
+          {evaluation.score ?? 3.0} / 5.0
         </span>
       </div>
 
+      {/* Meta tags */}
       <div className="flex gap-1.5 flex-wrap text-[10px] font-semibold text-slate-600">
-        <span className="bg-slate-100 px-1.5 py-0.5 rounded">
-          {evaluation.archetype}
-        </span>
-        <span className="bg-slate-100 px-1.5 py-0.5 rounded">
-          {evaluation.seniority}
-        </span>
+        {evaluation.archetype && (
+          <span className="bg-slate-100 px-1.5 py-0.5 rounded">
+            {evaluation.archetype}
+          </span>
+        )}
+        {evaluation.seniority && (
+          <span className="bg-slate-100 px-1.5 py-0.5 rounded">
+            {evaluation.seniority}
+          </span>
+        )}
         {evaluation.level && (
           <span className="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">
             🏷️ {evaluation.level}
           </span>
         )}
-        <span className="bg-slate-100 px-1.5 py-0.5 rounded">
-          {evaluation.remote}
-        </span>
+        {evaluation.remote && (
+          <span className="bg-slate-100 px-1.5 py-0.5 rounded">
+            {evaluation.remote}
+          </span>
+        )}
       </div>
 
+      {/* Reason */}
       {evaluation.reason && (
         <p className="text-[11px] text-slate-600 bg-slate-50 p-1.5 rounded border border-slate-200 italic">
           "{evaluation.reason}"
         </p>
       )}
 
-      {evaluation.redFlags.length > 0 && (
+      {/* Red flags */}
+      {redFlags.length > 0 && (
         <div className="p-1.5 rounded bg-amber-50 border border-amber-200 text-[11px] text-amber-800">
-          ⚠️ {evaluation.redFlags.join(', ')}
+          ⚠️ {redFlags.join(', ')}
         </div>
       )}
 
+      {/* Skills */}
       <div className="space-y-1">
         <div className="text-[11px] font-semibold text-slate-700">
           Matched Skills
         </div>
         <div className="flex flex-wrap gap-1">
-          {evaluation.matchedSkills.length > 0 ? (
-            evaluation.matchedSkills.map((s) => (
+          {matchedSkills.length > 0 ? (
+            matchedSkills.map((s) => (
               <span
                 key={s}
                 className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-medium"
@@ -89,11 +104,12 @@ export function EvaluationCard({ job, onAddToKanban, onCancel }: Props) {
         </div>
       </div>
 
-      {evaluation.missingSkills.length > 0 && (
+      {/* Gaps */}
+      {missingSkills.length > 0 && (
         <div className="space-y-1">
           <div className="text-[11px] font-semibold text-slate-700">Gaps</div>
           <div className="flex flex-wrap gap-1">
-            {evaluation.missingSkills.slice(0, 6).map((s) => (
+            {missingSkills.slice(0, 6).map((s) => (
               <span
                 key={s}
                 className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-medium"
@@ -105,6 +121,7 @@ export function EvaluationCard({ job, onAddToKanban, onCancel }: Props) {
         </div>
       )}
 
+      {/* Action buttons */}
       <div className="pt-2 border-t border-slate-100 flex gap-2">
         <button
           onClick={onCancel}

@@ -64,7 +64,8 @@ export function evaluateJob(
 export async function evaluateJobWithAi(
   job: DetectedJob,
   profile?: Record<string, string>
-): Promise<{ success: boolean; evaluation: JobEvaluation; error?: string }> {
+): Promise<JobEvaluation> {
   const deterministic = evaluateJob(job, profile);
-  return evaluateWithLlm(job, deterministic, profile);
+  const result = await evaluateWithLlm(job, deterministic, profile);
+  return result.evaluation;
 }
