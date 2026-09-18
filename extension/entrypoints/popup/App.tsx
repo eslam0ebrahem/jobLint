@@ -4,26 +4,70 @@ import { useJobs } from '@/src/hooks/useJobs';
 import { Header } from '@/src/components/Header';
 import { JobList } from '@/src/components/JobList';
 import { Footer } from '@/src/components/Footer';
+import { EvaluationCard } from '@/src/components/EvaluationCard';
+import { evaluateJobWithAi } from '@/src/lib/evaluator';
+import type { DetectedJob, JobEvaluation } from '@/src/types/job';
 
 export default function App() {
   const { jobs, loading, refresh } = useJobs();
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [evaluatingJob, setEvaluatingJob] = useState<(DetectedJob & { evaluation: JobEvaluation }) | null>(null);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+
+  const getProfile = async () => {
+    const res = await browser.storage.local.get('profile');
+    return (res.profile as Record<string, string>) || {};
+  };
+
+  const getActiveTabJob = async () => {
+    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) return null;
+    const res = await browser.tabs.sendMessage(tab.id, { action: 'clip-job' });
+    return res?.job || null;
+  };
+
+  const handleEvaluate = async () => {
+    setFeedback(null);
+    setIsEvaluating(true);
+    try {
+      const job = await getActiveTabJob();
+      if (!job) {
+        alert('No job detected on this page.');
+        return;
+      }
+      const profile = await getProfile();
+      const evaluation = await evaluateJobWithAi(job, profile);
+      setEvaluatingJob({ ...job, evaluation });
+    } catch {
+      alert('Could not connect. Refresh the job page and try again.');
+    } finally {
+      setIsEvaluating(false);
+    }
+  };
+
+  const handleSaveEvaluated = async () => {
+    if (!evaluatingJob) return;
+    const { isNew } = await saveJob({ ...evaluatingJob, column: 'to_apply', status: 'active' });
+    await refresh();
+    setFeedback(isNew ? `Saved: ${evaluatingJob.title}` : `Updated: ${evaluatingJob.title}`);
+    setEvaluatingJob(null);
+    setTimeout(() => setFeedback(null), 3000);
+  };
 
   const handleClip = async () => {
     setFeedback(null);
-    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.id) return;
-
     try {
-      const res = await browser.tabs.sendMessage(tab.id, { action: 'clip-job' });
-      if (res?.job) {
-        const { isNew } = await saveJob({ ...res.job, column: 'to_apply', status: 'active' });
-        await refresh();
-        setFeedback(isNew ? `Saved: ${res.job.title}` : `Updated: ${res.job.title}`);
-        setTimeout(() => setFeedback(null), 3000);
-      } else {
+      const job = await getActiveTabJob();
+      if (!job) {
         alert('No job detected on this page.');
+        return;
       }
+      const profile = await getProfile();
+      const evaluation = await evaluateJobWithAi(job, profile);
+      const { isNew } = await saveJob({ ...job, evaluation, column: 'to_apply', status: 'active' });
+      await refresh();
+      setFeedback(isNew ? `Saved: ${job.title}` : `Updated: ${job.title}`);
+      setTimeout(() => setFeedback(null), 3000);
     } catch {
       alert('Could not connect. Refresh the job page and try again.');
     }
@@ -43,8 +87,18 @@ export default function App() {
           ✓ {feedback}
         </div>
       )}
-      <JobList jobs={jobs} loading={loading} onDelete={handleDelete} />
-      <Footer onClip={handleClip} />
+      {evaluatingJob ? (
+        <EvaluationCard
+          job={evaluatingJob}
+          onAddToKanban={handleSaveEvaluated}
+          onCancel={() => setEvaluatingJob(null)}
+        />
+      ) : (
+        <>
+          <JobList jobs={jobs} loading={loading} onDelete={handleDelete} />
+          <Footer onClip={handleClip} onEvaluate={handleEvaluate} evaluating={isEvaluating} />
+        </>
+      )}
     </div>
   );
 }
