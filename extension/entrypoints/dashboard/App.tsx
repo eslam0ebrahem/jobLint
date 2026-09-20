@@ -1,6 +1,7 @@
 import { useJobs } from '@/src/hooks/useJobs';
 import { deleteJob, updateJobColumn, updateJobNotes, saveJob } from '@/src/lib/db';
 import { evaluateJobWithAi } from '@/src/lib/evaluator';
+import { exportJobsToCsv, exportJobsToJson, importJobsFromJson } from '@/src/lib/export';
 import type { Column, Job } from '@/src/types/job';
 import { useState } from 'react';
 import { DashboardHeader } from './components/DashboardHeader';
@@ -13,6 +14,7 @@ export default function App() {
   const [search, setSearch] = useState('');
   const [evaluatingId, setEvaluatingId] = useState<string | null>(null);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   const selectedJob = jobs.find((j) => j.id === selectedJobId) || null;
 
@@ -44,6 +46,33 @@ export default function App() {
     await refresh();
   };
 
+  const handleExportCsv = () => {
+    if (!jobs.length) {
+      alert('No jobs to export.');
+      return;
+    }
+    exportJobsToCsv(jobs);
+  };
+
+  const handleExportJson = () => {
+    if (!jobs.length) {
+      alert('No jobs to export.');
+      return;
+    }
+    exportJobsToJson(jobs);
+  };
+
+  const handleImportJson = async (file: File) => {
+    const res = await importJobsFromJson(file);
+    if (res.success) {
+      await refresh();
+      setFeedback(`Successfully imported ${res.count} job${res.count === 1 ? '' : 's'}!`);
+      setTimeout(() => setFeedback(null), 4000);
+    } else {
+      alert(`Import failed: ${res.error || 'Unknown error'}`);
+    }
+  };
+
   const handleEvaluate = async (job: Job) => {
     setEvaluatingId(job.id);
     try {
@@ -71,7 +100,22 @@ export default function App() {
         totalJobs={jobs.length}
         search={search}
         onSearchChange={setSearch}
+        onExportCsv={handleExportCsv}
+        onExportJson={handleExportJson}
+        onImportJson={handleImportJson}
       />
+
+      {feedback && (
+        <div className="mb-3 px-3.5 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between shrink-0 animate-in fade-in duration-200">
+          <span>✓ {feedback}</span>
+          <button
+            onClick={() => setFeedback(null)}
+            className="text-emerald-600 hover:text-emerald-800 text-sm leading-none cursor-pointer"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {loading ? (
         <div className="text-center py-20 text-slate-500 text-sm">
