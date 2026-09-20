@@ -9,6 +9,7 @@ interface Props {
   onMove: (id: string, col: Column) => void;
   onDelete: (id: string) => void;
   onEvaluate?: (job: Job) => void;
+  onSelect?: (job: Job) => void;
   evaluatingId?: string | null;
 }
 
@@ -19,6 +20,7 @@ export function KanbanColumn({
   onMove,
   onDelete,
   onEvaluate,
+  onSelect,
   evaluatingId,
 }: Props) {
   return (
@@ -50,6 +52,7 @@ export function KanbanColumn({
               onMove={onMove}
               onDelete={onDelete}
               onEvaluate={onEvaluate}
+              onSelect={onSelect}
               isEvaluating={evaluatingId === job.id}
             />
           ))

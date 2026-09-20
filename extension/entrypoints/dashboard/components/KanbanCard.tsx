@@ -6,10 +6,18 @@ interface Props {
   onMove: (id: string, col: Column) => void;
   onDelete: (id: string) => void;
   onEvaluate?: (job: Job) => void;
+  onSelect?: (job: Job) => void;
   isEvaluating?: boolean;
 }
 
-export function KanbanCard({ job, onMove, onDelete, onEvaluate, isEvaluating }: Props) {
+export function KanbanCard({
+  job,
+  onMove,
+  onDelete,
+  onEvaluate,
+  onSelect,
+  isEvaluating,
+}: Props) {
   const e = job.evaluation;
   const matched = Array.isArray(e?.matchedSkills) ? e.matchedSkills : [];
 
@@ -17,19 +25,30 @@ export function KanbanCard({ job, onMove, onDelete, onEvaluate, isEvaluating }: 
     <div
       draggable
       onDragStart={(ev) => ev.dataTransfer.setData('text/plain', job.id)}
-      className="bg-white border border-slate-200 rounded-lg p-3 shadow-xs hover:shadow-md hover:border-slate-300 transition-all cursor-grab active:cursor-grabbing shrink-0"
+      onClick={() => onSelect?.(job)}
+      className="bg-white border border-slate-200 rounded-lg p-3 shadow-xs hover:shadow-md hover:border-slate-300 transition-all cursor-pointer active:cursor-grabbing shrink-0"
     >
       <div className="flex justify-between items-start gap-1.5 mb-1">
-        <a
-          href={job.jobUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="text-xs font-semibold text-slate-900 hover:text-blue-600 line-clamp-2 leading-snug flex-1 break-words"
-        >
-          {job.title}
-        </a>
+        <div className="flex items-center gap-1 flex-1 min-w-0">
+          <span className="text-xs font-semibold text-slate-900 hover:text-indigo-600 line-clamp-2 leading-snug break-words">
+            {job.title}
+          </span>
+          <a
+            href={job.jobUrl}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(ev) => ev.stopPropagation()}
+            className="text-slate-400 hover:text-indigo-600 text-xs shrink-0 p-0.5"
+            title="Open job posting"
+          >
+            ↗
+          </a>
+        </div>
         <button
-          onClick={() => onDelete(job.id)}
+          onClick={(ev) => {
+            ev.stopPropagation();
+            onDelete(job.id);
+          }}
           className="text-slate-400 hover:text-red-500 text-sm leading-none p-0.5 cursor-pointer shrink-0"
           title="Delete"
         >
@@ -62,6 +81,14 @@ export function KanbanCard({ job, onMove, onDelete, onEvaluate, isEvaluating }: 
         {job.salary && (
           <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 truncate max-w-full">
             {job.salary}
+          </span>
+        )}
+        {job.notes && (
+          <span
+            title="Has application notes"
+            className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 flex items-center gap-0.5"
+          >
+            📝
           </span>
         )}
       </div>
@@ -100,7 +127,10 @@ export function KanbanCard({ job, onMove, onDelete, onEvaluate, isEvaluating }: 
       {/* Evaluate / Re-evaluate */}
       {!e ? (
         <button
-          onClick={() => onEvaluate?.(job)}
+          onClick={(ev) => {
+            ev.stopPropagation();
+            onEvaluate?.(job);
+          }}
           disabled={isEvaluating}
           className="w-full mb-2 py-1 px-2 rounded bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 text-indigo-700 text-[11px] font-semibold border border-indigo-200 flex items-center justify-center gap-1 cursor-pointer transition-colors disabled:opacity-50"
         >
@@ -109,7 +139,10 @@ export function KanbanCard({ job, onMove, onDelete, onEvaluate, isEvaluating }: 
       ) : (
         <div className="flex justify-end mb-1.5">
           <button
-            onClick={() => onEvaluate?.(job)}
+            onClick={(ev) => {
+              ev.stopPropagation();
+              onEvaluate?.(job);
+            }}
             disabled={isEvaluating}
             title="Re-evaluate with AI"
             className="text-[10px] text-slate-400 hover:text-indigo-600 cursor-pointer disabled:opacity-50 flex items-center gap-0.5"
@@ -121,7 +154,11 @@ export function KanbanCard({ job, onMove, onDelete, onEvaluate, isEvaluating }: 
 
       <select
         value={job.column || 'to_apply'}
-        onChange={(ev) => onMove(job.id, ev.target.value as Column)}
+        onClick={(ev) => ev.stopPropagation()}
+        onChange={(ev) => {
+          ev.stopPropagation();
+          onMove(job.id, ev.target.value as Column);
+        }}
         className="w-full text-[11px] text-slate-600 bg-slate-50 border border-slate-200 rounded px-1.5 py-1 outline-none focus:border-blue-500 cursor-pointer"
       >
         {COLUMNS.map((c) => (

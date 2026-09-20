@@ -39,4 +39,11 @@ export const updateJobColumn = async (id: string, column: Column) => {
   if (job) await db.put('jobs', { ...job, column, updatedAt: new Date().toISOString() });
 };
 
+export const updateJobNotes = async (id: string, notes: string) => {
+  const db = await dbPromise;
+  const job = await db.get('jobs', id);
+  if (job) await db.put('jobs', { ...job, notes, updatedAt: new Date().toISOString() });
+};
+
 export const deleteJob = async (id: string) => (await dbPromise).delete('jobs', id);
+

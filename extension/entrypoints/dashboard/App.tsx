@@ -1,16 +1,20 @@
 import { useJobs } from '@/src/hooks/useJobs';
-import { deleteJob, updateJobColumn, saveJob } from '@/src/lib/db';
+import { deleteJob, updateJobColumn, updateJobNotes, saveJob } from '@/src/lib/db';
 import { evaluateJobWithAi } from '@/src/lib/evaluator';
 import type { Column, Job } from '@/src/types/job';
 import { useState } from 'react';
 import { DashboardHeader } from './components/DashboardHeader';
 import { KanbanColumn } from './components/KanbanColumn';
+import { JobDetailsDrawer } from './components/JobDetailsDrawer';
 import { COLUMNS } from './constants';
 
 export default function App() {
   const { jobs, loading, refresh } = useJobs();
   const [search, setSearch] = useState('');
   const [evaluatingId, setEvaluatingId] = useState<string | null>(null);
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+
+  const selectedJob = jobs.find((j) => j.id === selectedJobId) || null;
 
   const handleDrop = async (col: Column, e: React.DragEvent) => {
     e.preventDefault();
@@ -29,9 +33,15 @@ export default function App() {
 
   const handleDelete = async (id: string) => {
     if (confirm('Delete this job?')) {
+      if (selectedJobId === id) setSelectedJobId(null);
       await deleteJob(id);
       await refresh();
     }
+  };
+
+  const handleUpdateNotes = async (id: string, notes: string) => {
+    await updateJobNotes(id, notes);
+    await refresh();
   };
 
   const handleEvaluate = async (job: Job) => {
@@ -78,10 +88,23 @@ export default function App() {
               onMove={handleMove}
               onDelete={handleDelete}
               onEvaluate={handleEvaluate}
+              onSelect={(job) => setSelectedJobId(job.id)}
               evaluatingId={evaluatingId}
             />
           ))}
         </div>
+      )}
+
+      {selectedJob && (
+        <JobDetailsDrawer
+          job={selectedJob}
+          onClose={() => setSelectedJobId(null)}
+          onMove={handleMove}
+          onDelete={handleDelete}
+          onEvaluate={handleEvaluate}
+          onUpdateNotes={handleUpdateNotes}
+          isEvaluating={evaluatingId === selectedJob.id}
+        />
       )}
     </div>
   );
