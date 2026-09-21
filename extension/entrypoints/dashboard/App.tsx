@@ -1,6 +1,6 @@
 import { useJobs } from '@/src/hooks/useJobs';
 import { deleteJob, updateJobColumn, updateJobNotes, saveJob } from '@/src/lib/db';
-import { evaluateJobWithAi } from '@/src/lib/evaluation';
+import { evaluateJobWithAi, getProfileMissingNotice } from '@/src/lib/evaluation';
 import { exportJobsToCsv, exportJobsToJson, importJobsFromJson } from '@/src/lib/export';
 import type { Column, Job } from '@/src/types/job';
 import { useState } from 'react';
@@ -20,7 +20,7 @@ export default function App() {
     setNotice({ msg, isError });
     setTimeout(() => {
       setNotice((curr) => (curr?.msg === msg ? null : curr));
-    }, 4000);
+    }, 6000);
   };
 
   const selectedJob = jobs.find((j) => j.id === selectedJobId) || null;
@@ -79,10 +79,16 @@ export default function App() {
   };
 
   const handleEvaluate = async (job: Job) => {
-    setEvaluatingId(job.id);
     try {
       const res = await browser.storage.local.get('profile');
       const profile = (res.profile as Record<string, string>) || {};
+      const noticeMsg = getProfileMissingNotice(profile);
+      if (noticeMsg) {
+        showNotice(noticeMsg, true);
+        return;
+      }
+
+      setEvaluatingId(job.id);
       const evaluation = await evaluateJobWithAi(job, profile);
       await saveJob({ ...job, evaluation });
       await refresh();
@@ -118,7 +124,17 @@ export default function App() {
               : 'bg-emerald-50 border-emerald-200 text-emerald-800'
           }`}
         >
-          <span>{notice.isError ? '✕' : '✓'} {notice.msg}</span>
+          <div className="flex items-center gap-2">
+            <span>{notice.isError ? '✕' : '✓'} {notice.msg}</span>
+            {notice.msg.includes('Profile') && (
+              <button
+                onClick={() => browser.tabs.create({ url: browser.runtime.getURL('/profile.html') })}
+                className="underline font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer ml-1"
+              >
+                Open Profile →
+              </button>
+            )}
+          </div>
           <button
             onClick={() => setNotice(null)}
             className={`text-sm leading-none cursor-pointer ml-2 ${

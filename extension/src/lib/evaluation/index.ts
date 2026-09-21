@@ -30,5 +30,23 @@ export function evaluateJob(job: DetectedJob, profile?: Record<string, string>):
   return { score, verdict, verdictLabel, archetype, seniority, level, remote, legitimacy, reason, matchedSkills, missingSkills, redFlags, aiEnhanced: false };
 }
 
+export function isProfileFilled(profile?: Record<string, string> | null): boolean {
+  if (!profile) return false;
+  return Boolean(profile.roles?.trim() && profile.skills?.trim());
+}
+
+export function getProfileMissingNotice(profile?: Record<string, string> | null): string | null {
+  if (!profile || (!profile.roles?.trim() && !profile.skills?.trim())) {
+    return 'Please complete your Profile (Target Roles & Skills) before evaluating jobs.';
+  }
+  if (!profile.roles?.trim()) {
+    return 'Please set your Target Roles in Profile before evaluating jobs.';
+  }
+  if (!profile.skills?.trim()) {
+    return 'Please set your Skills & Tech Stack in Profile before evaluating jobs.';
+  }
+  return null;
+}
+
 export const evaluateJobWithAi = (job: DetectedJob, profile?: Record<string, string>) =>
   evaluateWithLlm(job, evaluateJob(job, profile), profile);

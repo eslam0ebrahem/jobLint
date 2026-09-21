@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
 
 const FIELDS = [
-  { key: 'name', label: 'Full Name', ph: 'Eslam Abdelgalil' },
-  { key: 'email', label: 'Email', ph: 'name@example.com' },
-  { key: 'phone', label: 'Phone', ph: '+34 744 76 3716' },
-  { key: 'location', label: 'Location', ph: 'Alicante, Spain' },
+  { key: 'name', label: 'Full Name', ph: 'Alex Doe' },
+  { key: 'email', label: 'Email', ph: 'alex.doe@example.com' },
+  { key: 'phone', label: 'Phone', ph: '+1 (555) 019-2834' },
+  { key: 'location', label: 'Location', ph: 'New York, NY' },
   { key: 'linkedin', label: 'LinkedIn', ph: 'https://linkedin.com/in/username' },
   { key: 'github', label: 'GitHub', ph: 'https://github.com/username' },
-  { key: 'roles', label: 'Target Roles', ph: 'Backend Developer, Software Engineer' },
-  { key: 'skills', label: 'Skills & Tech Stack', ph: 'Node.js, Express, MongoDB, TypeScript, React' },
-  { key: 'salary', label: 'Target Salary', ph: '€20K - €60K' },
-  { key: 'visa', label: 'Work Authorization', ph: 'Work Permit / Citizen / Sponsorship' },
+  { key: 'roles', label: 'Target Roles *', ph: 'Software Engineer, Full Stack Developer' },
+  { key: 'skills', label: 'Skills & Tech Stack *', ph: 'TypeScript, React, Node.js, Python, PostgreSQL, AWS' },
+  { key: 'salary', label: 'Target Salary', ph: '$90K - $130K' },
+  { key: 'visa', label: 'Work Authorization', ph: 'Citizen / Permanent Resident / Work Permit' },
 ] as const;
 
 export default function App() {
@@ -37,9 +37,14 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 p-6 flex justify-center items-start text-slate-800 font-sans">
       <div className="w-full max-w-lg bg-white rounded-xl border border-slate-200 p-6 shadow-xs space-y-4">
-        <h1 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
-          Profile Settings
-        </h1>
+        <div>
+          <h1 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-2">
+            Profile Settings
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            <strong>Target Roles</strong> and <strong>Skills</strong> are required to evaluate jobs against your profile.
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {FIELDS.map(({ key, label, ph }) => (

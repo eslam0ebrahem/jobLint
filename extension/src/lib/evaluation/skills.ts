@@ -13,7 +13,7 @@ const ALIASES: Record<string, string> = {
   'c#': 'C#', '.net': '.NET', 'ci/cd': 'CI/CD', rest: 'REST APIs', restful: 'REST APIs',
 };
 
-export const DEFAULT_SKILLS = ['Node.js', 'Express', 'MongoDB', 'SQL', 'PostgreSQL', 'TypeScript', 'React', 'Docker', 'AWS'];
+export const DEFAULT_SKILLS: string[] = [];
 
 export const cleanSkill = (s: string) => ALIASES[s.toLowerCase().trim()] || s.trim();
 

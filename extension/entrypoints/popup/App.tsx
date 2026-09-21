@@ -5,7 +5,7 @@ import { Header } from '@/src/components/Header';
 import { JobList } from '@/src/components/JobList';
 import { Footer } from '@/src/components/Footer';
 import { EvaluationCard } from '@/src/components/EvaluationCard';
-import { evaluateJobWithAi } from '@/src/lib/evaluation';
+import { evaluateJobWithAi, getProfileMissingNotice } from '@/src/lib/evaluation';
 import type { DetectedJob, Job, JobEvaluation } from '@/src/types/job';
 
 export default function App() {
@@ -18,7 +18,7 @@ export default function App() {
 
   const showError = (msg: string) => {
     setError(msg);
-    setTimeout(() => setError(null), 4000);
+    setTimeout(() => setError(null), 5000);
   };
 
   const getProfile = async () => {
@@ -53,6 +53,14 @@ export default function App() {
   const handleEvaluate = async () => {
     setFeedback(null);
     setError(null);
+
+    const profile = await getProfile();
+    const notice = getProfileMissingNotice(profile);
+    if (notice) {
+      showError(notice);
+      return;
+    }
+
     setIsEvaluating(true);
     try {
       const job = await getActiveTabJob();
@@ -60,7 +68,6 @@ export default function App() {
         showError('No job detected. Open a job on LinkedIn or Indeed first.');
         return;
       }
-      const profile = await getProfile();
       const evaluation = await evaluateJobWithAi(job, profile);
       setEvaluatingJob({ ...job, evaluation });
     } catch {
@@ -98,10 +105,16 @@ export default function App() {
   };
 
   const handleEvaluateCard = async (job: Job) => {
+    const profile = await getProfile();
+    const notice = getProfileMissingNotice(profile);
+    if (notice) {
+      showError(notice);
+      return;
+    }
+
     setEvaluatingCardId(job.id);
     setError(null);
     try {
-      const profile = await getProfile();
       const evaluation = await evaluateJobWithAi(job, profile);
       await saveJob({ ...job, evaluation });
       await refresh();
@@ -128,9 +141,19 @@ export default function App() {
         </div>
       )}
       {error && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs px-2.5 py-1.5 rounded-md mb-2 font-medium flex items-center justify-between">
-          <span>✕ {error}</span>
-          <button onClick={() => setError(null)} className="cursor-pointer text-sm leading-none ml-1">×</button>
+        <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs px-2.5 py-1.5 rounded-md mb-2 font-medium flex items-start justify-between gap-1.5">
+          <div className="flex-1">
+            <span>✕ {error}</span>
+            {error.includes('Profile') && (
+              <button
+                onClick={() => browser.tabs.create({ url: browser.runtime.getURL('/profile.html') })}
+                className="mt-1 block font-bold text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
+              >
+                Open Profile Settings →
+              </button>
+            )}
+          </div>
+          <button onClick={() => setError(null)} className="cursor-pointer text-sm leading-none ml-1 shrink-0">×</button>
         </div>
       )}
       {evaluatingJob ? (
