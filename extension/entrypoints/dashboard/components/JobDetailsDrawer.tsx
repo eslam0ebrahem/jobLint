@@ -23,10 +23,12 @@ export function JobDetailsDrawer({
 }: Props) {
   const [notes, setNotes] = useState('');
   const [notesSaved, setNotesSaved] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     setNotes(job?.notes || '');
     setNotesSaved(false);
+    setConfirmDelete(false);
   }, [job?.id, job?.notes]);
 
   useEffect(() => {
@@ -299,17 +301,33 @@ export function JobDetailsDrawer({
 
           {/* Danger zone */}
           <div className="pt-4 border-t border-slate-200 flex justify-between items-center">
-            <button
-              onClick={() => {
-                if (confirm('Are you sure you want to delete this job?')) {
-                  onDelete(job.id);
-                  onClose();
-                }
-              }}
-              className="text-xs font-semibold text-rose-600 hover:text-rose-800 cursor-pointer"
-            >
-              Delete Job
-            </button>
+            {!confirmDelete ? (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="text-xs font-semibold text-rose-600 hover:text-rose-800 cursor-pointer"
+              >
+                Delete Job
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-rose-700 font-medium">Delete this job?</span>
+                <button
+                  onClick={() => {
+                    onDelete(job.id);
+                    onClose();
+                  }}
+                  className="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs cursor-pointer transition-colors"
+                >
+                  Yes, Delete
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="text-xs text-slate-500 hover:text-slate-700 cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
             <button
               onClick={onClose}
               className="px-4 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold text-xs cursor-pointer"

@@ -5,42 +5,66 @@ import { Header } from '@/src/components/Header';
 import { JobList } from '@/src/components/JobList';
 import { Footer } from '@/src/components/Footer';
 import { EvaluationCard } from '@/src/components/EvaluationCard';
-import { evaluateJobWithAi } from '@/src/lib/evaluator';
+import { evaluateJobWithAi } from '@/src/lib/evaluation';
 import type { DetectedJob, Job, JobEvaluation } from '@/src/types/job';
 
 export default function App() {
   const { jobs, loading, refresh } = useJobs();
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [evaluatingJob, setEvaluatingJob] = useState<(DetectedJob & { evaluation: JobEvaluation }) | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [evaluatingCardId, setEvaluatingCardId] = useState<string | null>(null);
+
+  const showError = (msg: string) => {
+    setError(msg);
+    setTimeout(() => setError(null), 4000);
+  };
 
   const getProfile = async () => {
     const res = await browser.storage.local.get('profile');
     return (res.profile as Record<string, string>) || {};
   };
 
-  const getActiveTabJob = async () => {
+  const getActiveTabJob = async (): Promise<DetectedJob | null> => {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     if (!tab?.id) return null;
-    const res = await browser.tabs.sendMessage(tab.id, { action: 'clip-job' });
-    return res?.job || null;
+
+    let res: DetectedJob | null = null;
+    try {
+      res = await browser.tabs.sendMessage(tab.id, { action: 'clip-job' });
+    } catch {
+      // Content script may not be running yet on pre-existing tabs; inject dynamically
+      try {
+        await browser.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['/content-scripts/content.js'],
+        });
+        await new Promise((r) => setTimeout(r, 250));
+        res = await browser.tabs.sendMessage(tab.id, { action: 'clip-job' });
+      } catch (err) {
+        console.warn('Could not inject or connect to content script:', err);
+        return null;
+      }
+    }
+    return res?.title ? res : null;
   };
 
   const handleEvaluate = async () => {
     setFeedback(null);
+    setError(null);
     setIsEvaluating(true);
     try {
       const job = await getActiveTabJob();
       if (!job) {
-        alert('No job detected on this page.');
+        showError('No job detected. Open a job on LinkedIn or Indeed first.');
         return;
       }
       const profile = await getProfile();
       const evaluation = await evaluateJobWithAi(job, profile);
       setEvaluatingJob({ ...job, evaluation });
     } catch {
-      alert('Could not connect. Refresh the job page and try again.');
+      showError('Could not connect. Refresh the job page and try again.');
     } finally {
       setIsEvaluating(false);
     }
@@ -57,10 +81,11 @@ export default function App() {
 
   const handleClip = async () => {
     setFeedback(null);
+    setError(null);
     try {
       const job = await getActiveTabJob();
       if (!job) {
-        alert('No job detected on this page.');
+        showError('No job detected. Open a job on LinkedIn or Indeed first.');
         return;
       }
       const { isNew } = await saveJob({ ...job, column: 'to_apply', status: 'active' });
@@ -68,19 +93,20 @@ export default function App() {
       setFeedback(isNew ? `Clipped: ${job.title}` : `Updated: ${job.title}`);
       setTimeout(() => setFeedback(null), 3000);
     } catch {
-      alert('Could not connect. Refresh the job page and try again.');
+      showError('Could not connect. Refresh the job page and try again.');
     }
   };
 
   const handleEvaluateCard = async (job: Job) => {
     setEvaluatingCardId(job.id);
+    setError(null);
     try {
       const profile = await getProfile();
       const evaluation = await evaluateJobWithAi(job, profile);
       await saveJob({ ...job, evaluation });
       await refresh();
     } catch {
-      alert('Evaluation failed. Please check your settings or network.');
+      showError('Evaluation failed. Please check AI settings or network.');
     } finally {
       setEvaluatingCardId(null);
     }
@@ -96,8 +122,15 @@ export default function App() {
     <div className="w-[340px] p-3 flex flex-col font-sans bg-white text-slate-900 box-border">
       <Header count={jobs.length} />
       {feedback && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs px-2.5 py-1.5 rounded-md mb-2 font-medium">
-          ✓ {feedback}
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs px-2.5 py-1.5 rounded-md mb-2 font-medium flex items-center justify-between">
+          <span>✓ {feedback}</span>
+          <button onClick={() => setFeedback(null)} className="cursor-pointer text-sm leading-none ml-1">×</button>
+        </div>
+      )}
+      {error && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs px-2.5 py-1.5 rounded-md mb-2 font-medium flex items-center justify-between">
+          <span>✕ {error}</span>
+          <button onClick={() => setError(null)} className="cursor-pointer text-sm leading-none ml-1">×</button>
         </div>
       )}
       {evaluatingJob ? (

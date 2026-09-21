@@ -22,16 +22,9 @@ export default defineContentScript({
     // Handle popup clip request
     browser.runtime.onMessage.addListener((msg, _, send) => {
       if (msg.action === 'clip-job') {
-        const result = detectJob();
-        if (result?.job) {
-          console.log('[JobLint] Detected Job:', {
-            title: result.job.title,
-            company: result.job.company,
-            descLength: result.job.description?.length || 0,
-          });
-        }
-        send(result);
-        return true;
+        const job = detectJob();
+        send(job);
+        return false;
       }
     });
 
@@ -52,41 +45,43 @@ export default defineContentScript({
     };
 
     const updateBadge = async () => {
-      const result = detectJob();
-      if (!result?.job) {
+      const job = detectJob();
+      if (!job) {
         removeFloatingBadge();
         currentJobKey = null;
         return;
       }
 
-      const jobKey = result.job.jobId || result.job.jobUrl || result.job.title;
+      const jobKey = job.jobId || job.jobUrl || job.title;
       if (jobKey === currentJobKey) return;
       currentJobKey = jobKey;
 
       try {
         const status = await browser.runtime.sendMessage({
           action: 'check-job-saved',
-          jobId: result.job.jobId,
-          source: result.job.source,
-          jobUrl: result.job.jobUrl,
+          jobId: job.jobId,
+          source: job.source,
+          jobUrl: job.jobUrl,
         });
 
         renderFloatingBadge(
-          result.job,
+          job,
           status?.isSaved || false,
           handleClip,
           handleOpenDashboard,
         );
       } catch {
-        renderFloatingBadge(result.job, false, handleClip, handleOpenDashboard);
+        renderFloatingBadge(job, false, handleClip, handleOpenDashboard);
       }
     };
 
-    // Initial check after DOM settles
-    setTimeout(updateBadge, 800);
+    // Initial checks after DOM settles and hydrates
+    setTimeout(updateBadge, 400);
+    setTimeout(updateBadge, 1000);
+    setTimeout(updateBadge, 2200);
 
-    // Watch for SPA job navigation (clicking different jobs in search list)
+    // Watch for SPA job navigation
     window.addEventListener('popstate', updateBadge);
-    setInterval(updateBadge, 1200);
+    setInterval(updateBadge, 1000);
   },
 });

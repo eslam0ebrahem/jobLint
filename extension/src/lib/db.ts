@@ -3,8 +3,9 @@ import { openDB } from 'idb';
 
 const dbPromise = openDB('joblint-db', 5, {
   upgrade(db) {
-    if (db.objectStoreNames.contains('jobs')) db.deleteObjectStore('jobs');
-    db.createObjectStore('jobs', { keyPath: 'id' });
+    if (!db.objectStoreNames.contains('jobs')) {
+      db.createObjectStore('jobs', { keyPath: 'id' });
+    }
   },
 });
 

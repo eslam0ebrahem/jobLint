@@ -1,5 +1,4 @@
 import type { DetectedJob } from '@/src/types/job';
-import tailwindCss from '@/src/styles.css?inline';
 
 let hostEl: HTMLDivElement | null = null;
 let shadowRoot: ShadowRoot | null = null;
@@ -13,11 +12,6 @@ export function removeFloatingBadge() {
   }
 }
 
-const BTN_CLIP =
-  'cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-full shadow-lg transition-all select-none bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white';
-const BTN_SAVED =
-  'cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-full shadow-sm border border-emerald-300 bg-white hover:bg-emerald-50 text-emerald-700 transition-all select-none';
-
 export function renderFloatingBadge(
   job: DetectedJob,
   isSaved: boolean,
@@ -27,35 +21,147 @@ export function renderFloatingBadge(
   const currentKey = job.jobId || job.jobUrl || job.title;
   if (dismissedJobKey === currentKey) return;
 
+  if (!document.body) return;
+
   if (!hostEl) {
     hostEl = document.createElement('div');
     hostEl.id = 'joblint-floating-root';
     shadowRoot = hostEl.attachShadow({ mode: 'open' });
+  }
+
+  // Ensure host element has unbreakable fixed positioning at maximum z-index
+  hostEl.style.cssText = `
+    all: initial !important;
+    position: fixed !important;
+    bottom: 24px !important;
+    right: 24px !important;
+    z-index: 2147483647 !important;
+    display: block !important;
+    pointer-events: auto !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  `;
+
+  if (!document.body.contains(hostEl)) {
     document.body.appendChild(hostEl);
   }
 
   if (!shadowRoot) return;
 
   shadowRoot.innerHTML = `
-    <style>${tailwindCss}</style>
-    <div class="fixed bottom-6 right-20 z-[2147483647] flex items-center gap-1.5 font-sans animate-in fade-in slide-in-from-bottom-2 duration-200">
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      .badge-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: transparent;
+        user-select: none;
+      }
+      .btn-clip {
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 9999px;
+        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4), 0 2px 6px rgba(0, 0, 0, 0.1);
+        background-color: #4f46e5;
+        color: #ffffff;
+        border: 1px solid #4338ca;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none;
+      }
+      .btn-clip:hover {
+        background-color: #4338ca;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.5);
+      }
+      .btn-clip:active {
+        transform: scale(0.96);
+      }
+      .btn-saved {
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 9999px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        background-color: #ecfdf5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .btn-saved:hover {
+        background-color: #d1fae5;
+        transform: translateY(-1px);
+      }
+      .btn-dash {
+        cursor: pointer;
+        width: 36px;
+        height: 36px;
+        border-radius: 9999px;
+        background-color: #ffffff;
+        border: 1px solid #cbd5e1;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        transition: all 0.2s;
+      }
+      .btn-dash:hover {
+        background-color: #f1f5f9;
+        transform: scale(1.08);
+      }
+      .btn-dismiss {
+        cursor: pointer;
+        width: 22px;
+        height: 22px;
+        border-radius: 9999px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border: 1px solid #cbd5e1;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: bold;
+        line-height: 1;
+        transition: all 0.2s;
+      }
+      .btn-dismiss:hover {
+        color: #0f172a;
+        background-color: #f8fafc;
+      }
+    </style>
+    <div class="badge-container">
       ${
         isSaved
           ? `
-          <button class="${BTN_SAVED}" id="joblint-main-btn" title="Saved in Kanban. Click to open Kanban board.">
+          <button class="btn-saved" id="joblint-main-btn" title="Saved in Kanban. Click to open Kanban board.">
             <span>✓</span> In Kanban
           </button>
         `
           : `
-          <button class="${BTN_CLIP}" id="joblint-main-btn" title="1-click save this job to JobLint Kanban">
+          <button class="btn-clip" id="joblint-main-btn" title="1-click save this job to JobLint Kanban">
             <span>⚡</span> Clip to Kanban
           </button>
         `
       }
-      <button class="cursor-pointer w-7 h-7 rounded-full bg-white hover:bg-slate-100 border border-slate-200 shadow-sm flex items-center justify-center text-xs text-slate-600 transition-all hover:scale-105" id="joblint-dashboard-btn" title="Open Kanban Dashboard">
+      <button class="btn-dash" id="joblint-dashboard-btn" title="Open Kanban Dashboard">
         📊
       </button>
-      <button class="cursor-pointer w-4 h-4 rounded-full flex items-center justify-center text-xs text-slate-400 hover:text-slate-600 leading-none" id="joblint-dismiss-btn" title="Hide for this job">
+      <button class="btn-dismiss" id="joblint-dismiss-btn" title="Hide for this job">
         ×
       </button>
     </div>
@@ -73,7 +179,7 @@ export function renderFloatingBadge(
         mainBtn.innerHTML = '<span>⏳</span> Saving...';
         const success = await onClip(job);
         if (success) {
-          mainBtn.className = BTN_SAVED;
+          mainBtn.className = 'btn-saved';
           mainBtn.innerHTML = '<span>✓</span> Clipped!';
           setTimeout(() => {
             if (mainBtn) mainBtn.innerHTML = '<span>✓</span> In Kanban';
@@ -82,7 +188,7 @@ export function renderFloatingBadge(
           mainBtn.innerHTML = '<span>✕</span> Failed';
           setTimeout(() => {
             if (mainBtn) {
-              mainBtn.className = BTN_CLIP;
+              mainBtn.className = 'btn-clip';
               mainBtn.innerHTML = '<span>⚡</span> Clip to Kanban';
             }
           }, 2000);

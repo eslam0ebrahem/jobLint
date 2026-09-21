@@ -1,14 +1,12 @@
-import type { DetectionResult } from '@/src/types/job';
+import type { DetectedJob } from '@/src/types/job';
 import { detectIndeed } from './indeed';
 import { detectLinkedIn } from './linkedin';
 
-export function detectJob(): DetectionResult | null {
+export function detectJob(): DetectedJob | null {
   const host = location.hostname;
-  const job = host.includes('linkedin.com')
+  return host.includes('linkedin.com')
     ? detectLinkedIn()
     : host.includes('indeed.')
       ? detectIndeed()
       : null;
-
-  return job ? { job } : null;
 }

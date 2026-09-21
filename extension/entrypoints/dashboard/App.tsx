@@ -1,6 +1,6 @@
 import { useJobs } from '@/src/hooks/useJobs';
 import { deleteJob, updateJobColumn, updateJobNotes, saveJob } from '@/src/lib/db';
-import { evaluateJobWithAi } from '@/src/lib/evaluator';
+import { evaluateJobWithAi } from '@/src/lib/evaluation';
 import { exportJobsToCsv, exportJobsToJson, importJobsFromJson } from '@/src/lib/export';
 import type { Column, Job } from '@/src/types/job';
 import { useState } from 'react';
@@ -14,7 +14,14 @@ export default function App() {
   const [search, setSearch] = useState('');
   const [evaluatingId, setEvaluatingId] = useState<string | null>(null);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ msg: string; isError?: boolean } | null>(null);
+
+  const showNotice = (msg: string, isError = false) => {
+    setNotice({ msg, isError });
+    setTimeout(() => {
+      setNotice((curr) => (curr?.msg === msg ? null : curr));
+    }, 4000);
+  };
 
   const selectedJob = jobs.find((j) => j.id === selectedJobId) || null;
 
@@ -34,11 +41,10 @@ export default function App() {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Delete this job?')) {
-      if (selectedJobId === id) setSelectedJobId(null);
-      await deleteJob(id);
-      await refresh();
-    }
+    if (selectedJobId === id) setSelectedJobId(null);
+    await deleteJob(id);
+    await refresh();
+    showNotice('Job deleted.');
   };
 
   const handleUpdateNotes = async (id: string, notes: string) => {
@@ -48,7 +54,7 @@ export default function App() {
 
   const handleExportCsv = () => {
     if (!jobs.length) {
-      alert('No jobs to export.');
+      showNotice('No jobs to export.', true);
       return;
     }
     exportJobsToCsv(jobs);
@@ -56,7 +62,7 @@ export default function App() {
 
   const handleExportJson = () => {
     if (!jobs.length) {
-      alert('No jobs to export.');
+      showNotice('No jobs to export.', true);
       return;
     }
     exportJobsToJson(jobs);
@@ -66,10 +72,9 @@ export default function App() {
     const res = await importJobsFromJson(file);
     if (res.success) {
       await refresh();
-      setFeedback(`Successfully imported ${res.count} job${res.count === 1 ? '' : 's'}!`);
-      setTimeout(() => setFeedback(null), 4000);
+      showNotice(`Successfully imported ${res.count} job${res.count === 1 ? '' : 's'}!`);
     } else {
-      alert(`Import failed: ${res.error || 'Unknown error'}`);
+      showNotice(`Import failed: ${res.error || 'Unknown error'}`, true);
     }
   };
 
@@ -82,7 +87,7 @@ export default function App() {
       await saveJob({ ...job, evaluation });
       await refresh();
     } catch {
-      alert('Could not evaluate job.');
+      showNotice('Could not evaluate job. Check your AI settings or network.', true);
     } finally {
       setEvaluatingId(null);
     }
@@ -105,12 +110,20 @@ export default function App() {
         onImportJson={handleImportJson}
       />
 
-      {feedback && (
-        <div className="mb-3 px-3.5 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between shrink-0 animate-in fade-in duration-200">
-          <span>✓ {feedback}</span>
+      {notice && (
+        <div
+          className={`mb-3 px-3.5 py-2 rounded-lg border text-xs font-semibold flex items-center justify-between shrink-0 animate-in fade-in duration-200 ${
+            notice.isError
+              ? 'bg-rose-50 border-rose-200 text-rose-800'
+              : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+          }`}
+        >
+          <span>{notice.isError ? '✕' : '✓'} {notice.msg}</span>
           <button
-            onClick={() => setFeedback(null)}
-            className="text-emerald-600 hover:text-emerald-800 text-sm leading-none cursor-pointer"
+            onClick={() => setNotice(null)}
+            className={`text-sm leading-none cursor-pointer ml-2 ${
+              notice.isError ? 'text-rose-600 hover:text-rose-800' : 'text-emerald-600 hover:text-emerald-800'
+            }`}
           >
             ×
           </button>

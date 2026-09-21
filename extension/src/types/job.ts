@@ -40,10 +40,6 @@ export interface DetectedJob {
   evaluation?: JobEvaluation;
 }
 
-export interface DetectionResult {
-  job: DetectedJob;
-}
-
 export interface Job extends DetectedJob {
   id: string;
   column: Column;
