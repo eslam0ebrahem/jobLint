@@ -18,7 +18,6 @@ const LINKEDIN_DESCRIPTION_SELECTORS = [
 ];
 
 export function detectLinkedIn(): DetectedJob | null {
-  // 1. Never detect on 404, error, or not-found pages
   if (
     document.getElementById('error404') ||
     document.querySelector('.page-not-found, #error404, .error-container, [data-lang-error]') ||
@@ -28,7 +27,6 @@ export function detectLinkedIn(): DetectedJob | null {
     return null;
   }
 
-  // 2. Validate route: must be a legitimate job-related URL or have a genuine job detail pane
   const hasJobContainer = !!document.querySelector(
     '.scaffold-layout__detail, .jobs-search__job-details, .job-view-layout, .jobs-details__main-content, .core-rail, [data-view-name="job-details"]',
   );
@@ -43,12 +41,10 @@ export function detectLinkedIn(): DetectedJob | null {
     return null;
   }
 
-  // Reject malformed routes like /jobs/<id>/ which are 404s on LinkedIn
   if (/\/jobs\/\d+\/?$/.test(location.pathname)) {
     return null;
   }
 
-  // Target the detail pane, guest container, or entire document
   const detailPane = document.querySelector(
     '.scaffold-layout__detail, .jobs-search__job-details, .job-view-layout, .jobs-details__main-content, .core-rail, [data-view-name="job-details"]',
   );
@@ -56,7 +52,6 @@ export function detectLinkedIn(): DetectedJob | null {
 
   const params = new URLSearchParams(location.search);
 
-  // 3. Resolve Job ID through multiple tiers
   let jobId: string | undefined | null =
     location.pathname.match(/\/jobs\/view\/(?:[^\s/?#]+-)?(\d+)/)?.[1] ||
     params.get('currentJobId') ||
@@ -104,12 +99,10 @@ export function detectLinkedIn(): DetectedJob | null {
     ) ||
     getText('.top-card-layout__title, .topcard__title, h1', document);
 
-  // Document title fallback
   if (!title && document.title && document.title.includes('|')) {
     title = document.title.split('|')[0]?.split('—')[0]?.replace(/\bat\b.*$/i, '').trim();
   }
 
-  // Reject generic or error titles
   if (
     !title ||
     title.toLowerCase().includes('page not found') ||
@@ -119,7 +112,6 @@ export function detectLinkedIn(): DetectedJob | null {
     return null;
   }
 
-  // 5. Resolve Company Name
   let company =
     getText(
       'a.topcard__org-name-link, .topcard__flavor a, .job-details-jobs-unified-top-card__company-name, .jobs-unified-top-card__company-name, [data-view-name="job-details"] a[href*="/company/"], a[href*="/company/"]',
@@ -131,7 +123,6 @@ export function detectLinkedIn(): DetectedJob | null {
     ) ||
     getText('.topcard__flavor', document);
 
-  // Document title fallback for company
   if (!company && document.title && document.title.includes('|')) {
     company = document.title.split('|')[0]?.split('—')[0]?.split(/\bat\b/i)[1]?.trim();
   }

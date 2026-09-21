@@ -1,3 +1,11 @@
+/**
+ * Job Evaluation Logic
+ *
+ * Evaluation algorithms and scoring logic adapted and inspired by CareerOps:
+ * https://github.com/career-ops-hq/career-ops
+ * Refactored and optimized with AI to fit JobLint's standalone Chrome extension architecture.
+ */
+
 import type { DetectedJob, JobEvaluation } from '@/src/types/job';
 import { classifySkillGaps, DEFAULT_SKILLS } from './skills';
 import { detectArchetype, detectSeniority, extractLevel, detectRemote, matchRoleTarget } from './role';
