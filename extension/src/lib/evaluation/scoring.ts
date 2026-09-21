@@ -7,10 +7,11 @@ export function detectRedFlags(t: string, seniority: string, targets = '') {
 }
 
 export const detectLocationScore = (jobLoc = '', candidateLoc = '') => {
-  const j = jobLoc.toLowerCase(), c = candidateLoc.toLowerCase().split(',')[0]?.trim() || '';
+  const j = jobLoc.toLowerCase(), c = candidateLoc.toLowerCase().trim();
   if (!j || /remote|remoto/.test(j)) return 5;
-  if (c && j.includes(c)) return 5;
-  if (/spain|españa/.test(j) && /spain|españa/.test(c)) return 5;
+  if (!c) return 4;
+  const parts = c.split(/[,/]+/).map((p) => p.trim()).filter((p) => p.length > 2);
+  if (parts.some((p) => j.includes(p))) return 5;
   return /emea|europe|eu/.test(j) ? 4 : 3;
 };
 

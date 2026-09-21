@@ -13,19 +13,44 @@ export async function getAiConfig(): Promise<AiConfig> {
   };
 }
 
+export function cleanBaseUrl(url: string): string {
+  let clean = url.trim().replace(/\/+$/, '');
+  clean = clean.replace(/\/+(chat\/completions|models)\/?$/i, '');
+  if (clean.startsWith('http://') && !clean.includes('localhost') && !clean.includes('127.0.0.1')) {
+    clean = clean.replace(/^http:\/\//i, 'https://');
+  }
+  return clean;
+}
+
+export function cleanApiKey(key: string): string {
+  let clean = key.trim();
+  clean = clean.replace(/^["']|["']$/g, '').trim();
+  clean = clean.replace(/^Bearer\s+/i, '').trim();
+  return clean;
+}
+
+export function getAiAuthHeaders(apiKey: string): Record<string, string> {
+  const key = cleanApiKey(apiKey);
+  return {
+    Authorization: `Bearer ${key}`,
+    'x-api-key': key,
+    'HTTP-Referer': 'https://joblint.dev',
+    'X-Title': 'JobLint',
+  };
+}
+
 export async function fetchAiModels(
   baseUrl: string,
   apiKey: string
 ): Promise<{ success: boolean; models: string[]; error?: string }> {
-  const cleanUrl = baseUrl.trim().replace(/\/+$/, '');
+  const cleanUrl = cleanBaseUrl(baseUrl);
+  const cleanKey = cleanApiKey(apiKey);
   if (!cleanUrl) return { success: false, models: [], error: 'Base URL is required' };
-  if (!apiKey.trim()) return { success: false, models: [], error: 'API key is required' };
+  if (!cleanKey) return { success: false, models: [], error: 'API key is required' };
 
   try {
     const res = await fetch(`${cleanUrl}/models`, {
-      headers: {
-        Authorization: `Bearer ${apiKey.trim()}`,
-      },
+      headers: getAiAuthHeaders(cleanKey),
     });
 
     if (!res.ok) {

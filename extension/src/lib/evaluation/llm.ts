@@ -1,27 +1,42 @@
 import type { DetectedJob, JobEvaluation } from '@/src/types/job';
-import { getAiConfig } from '@/src/lib/ai';
+import { getAiConfig, cleanBaseUrl, getAiAuthHeaders } from '@/src/lib/ai';
 
 export async function evaluateWithLlm(job: DetectedJob, fallback: JobEvaluation, profile?: Record<string, string>): Promise<JobEvaluation> {
   const cfg = await getAiConfig();
   if (!cfg.baseUrl || !cfg.apiKey || !cfg.model) return fallback;
 
-  const prompt = `Evaluate job for candidate. Respond ONLY with JSON (no think tags, no markdown):
-Candidate: roles="${profile?.roles || 'Backend'}", skills="${profile?.skills || ''}", loc="${profile?.location || ''}"
-Job: ${job.title} at ${job.company} (${job.location || ''})
-Text: ${(job.description || '').slice(0, 3000)}
-Format: {"score":4.2,"verdict":"Apply","archetype":"Backend","seniority":"Senior","remote":"Remote","matchedSkills":["Node.js"],"missingSkills":["Go"],"reason":"one concise sentence"}`;
+  const prompt = [
+    'Evaluate job for candidate. Respond ONLY with JSON (no think tags, no markdown):',
+    `Candidate: roles="${profile?.roles || 'Software Engineer'}", skills="${profile?.skills || ''}", loc="${profile?.location || ''}"`,
+    `Job: ${job.title} at ${job.company} (${job.location || ''})`,
+    `Text: ${(job.description || '').slice(0, 3000)}`,
+    'Format: {"score":4.2,"verdict":"Apply","archetype":"Backend","seniority":"Senior","remote":"Remote","matchedSkills":["Node.js"],"missingSkills":["Go"],"reason":"one concise sentence"}',
+  ].join('\n');
 
   try {
-    const res = await fetch(`${cfg.baseUrl.replace(/\/+$/, '')}/chat/completions`, {
+    const res = await fetch(`${cleanBaseUrl(cfg.baseUrl)}/chat/completions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.apiKey.trim()}` },
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAiAuthHeaders(cfg.apiKey),
+      },
       body: JSON.stringify({ model: cfg.model.trim(), messages: [{ role: 'user', content: prompt }], temperature: 0.2, max_tokens: 3000 }),
     });
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      console.warn(`[JobLint AI] ${res.status}: ${err.error?.message || res.statusText}`);
-      return res.status === 402 ? { ...fallback, reason: `${fallback.reason} (AI credits exhausted: 402)` } : fallback;
+      const msg = err.error?.message || err.message || res.statusText;
+      console.warn(`[JobLint AI] ${res.status}: ${msg}`);
+      if (res.status === 402) {
+        return { ...fallback, reason: `${fallback.reason} (AI credits exhausted: 402)` };
+      }
+      if (res.status === 403) {
+        return { ...fallback, reason: `${fallback.reason} (AI 403: Selected model restricted)` };
+      }
+      if (res.status === 429) {
+        return { ...fallback, reason: `${fallback.reason} (AI rate limited: 429)` };
+      }
+      return fallback;
     }
 
     const data = await res.json();
