@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>JobLint — AI Job Hunter &amp; Kanban Tracker · Presentation</title>
+<style>
+  :root {
+    --bg: #0b1020;
+    --bg2: #0e1430;
+    --ink: #e8ecf8;
+    --muted: #9aa6c8;
+    --line: rgba(255,255,255,.09);
+    --indigo: #6366f1;
+    --indigo2: #818cf8;
+    --emerald: #34d399;
+    --amber: #fbbf24;
+    --rose: #fb7185;
+    --card: rgba(255,255,255,.045);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* ---------- background decor ---------- */
+  .decor { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+  .decor::before {
+    content: ""; position: absolute; inset: 0;
+    background:
+      radial-gradient(900px 500px at 85% -10%, rgba(99,102,241,.18), transparent 60%),
+      radial-gradient(700px 500px at -10% 110%, rgba(52,211,153,.10), transparent 60%),
+      radial-gradient(600px 400px at 50% 50%, rgba(129,140,248,.06), transparent 70%);
+  }
+  .decor::after {
+    content: ""; position: absolute; inset: 0; opacity: .35;
+    background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 90% 80% at 50% 40%, black 30%, transparent 75%);
+  }
+  .orb { position: absolute; border-radius: 50%; filter: blur(70px); opacity: .5; animation: floaty 12s ease-in-out infinite alternate; }
+  .orb.a { width: 340px; height: 340px; left: -80px; top: 12%; background: rgba(99,102,241,.35); }
+  .orb.b { width: 260px; height: 260px; right: 4%; bottom: -60px; background: rgba(52,211,153,.22); animation-delay: -6s; }
+  @keyframes floaty { from { transform: translateY(-12px); } to { transform: translateY(14px); } }
+
+  /* ---------- deck ---------- */
+  .deck { position: relative; z-index: 1; height: 100%; }
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 56px 88px 96px;
+    text-align: center;
+    opacity: 0; visibility: hidden; transform: translateY(26px) scale(.985);
+    transition: opacity .55s cubic-bezier(.2,.7,.3,1), transform .55s cubic-bezier(.2,.7,.3,1), visibility 0s .55s;
+  }
+  .slide.active { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+  .slide h1 { font-size: 66px; line-height: 1.08; letter-spacing: -.03em; font-weight: 800; }
+  .slide h2 { font-size: 46px; line-height: 1.12; letter-spacing: -.025em; font-weight: 800; }
+  .slide p.lead { font-size: 21px; line-height: 1.55; color: var(--muted); max-width: 880px; margin-top: 18px; }
+  .kicker {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12.5px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--indigo2); margin-bottom: 22px;
+  }
+  .kicker::before, .kicker::after { content: ""; width: 26px; height: 1.5px; background: currentColor; opacity: .6; }
+  .grad {
+    background: linear-gradient(92deg, var(--indigo2) 0%, #c4b5fd 45%, var(--emerald) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  small.note { color: var(--muted); font-size: 13px; }
+
+  /* staggered entrances */
+  .slide [data-anim] { opacity: 0; transform: translateY(18px); }
+  .slide.active [data-anim] {
+    animation: rise .7s cubic-bezier(.2,.7,.3,1) forwards;
+    animation-delay: calc(var(--d, 0) * 110ms + 180ms);
+  }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  /* ---------- shared components ---------- */
+  .row { display: flex; gap: 20px; justify-content: center; margin-top: 34px; flex-wrap: wrap; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+    padding: 26px 30px; text-align: left; backdrop-filter: blur(6px);
+    min-width: 250px; max-width: 330px; flex: 1 1 250px;
+    transition: transform .3s, border-color .3s;
+  }
+  .card:hover { transform: translateY(-5px); border-color: rgba(129,140,248,.45); }
+  .card .ico { font-size: 30px; margin-bottom: 12px; }
+  .card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+  .card p { font-size: 14px; line-height: 1.5; color: var(--muted); }
+
+  .chip { display: inline-block; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; margin: 3px; }
+  .chip.em { background: rgba(52,211,153,.14); color: #86efac; border: 1px solid rgba(52,211,153,.3); }
+  .chip.am { background: rgba(251,191,36,.12); color: #fcd34d; border: 1px solid rgba(251,191,36,.3); }
+  .chip.gr { background: rgba(255,255,255,.07); color: var(--muted); border: 1px solid var(--line); }
+  .chip.in { background: rgba(99,102,241,.16); color: #c7d2fe; border: 1px solid rgba(99,102,241,.4); }
+
+  /* flow arrows */
+  .steps { display: flex; align-items: center; gap: 14px; margin-top: 40px; flex-wrap: wrap; justify-content: center; }
+  .step {
+    width: 250px; padding: 28px 24px; border-radius: 18px; text-align: center;
+    background: var(--card); border: 1px solid var(--line);
+  }
+  .step .n { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 999px; font-weight: 800; font-size: 17px; margin-bottom: 14px; background: linear-gradient(135deg, var(--indigo), #8b5cf6); color: #fff; }
+  .step h3 { font-size: 16.5px; font-weight: 700; margin-bottom: 6px; }
+  .step p { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+  .arrow { font-size: 26px; color: var(--indigo2); animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: .45; transform: translateX(0);} 50% { opacity: 1; transform: translateX(5px);} }
+
+  /* ---------- demo mock: mock browser ---------- */
+  .browser {
+    width: 680px; max-width: 88vw; border-radius: 16px; overflow: hidden; text-align: left;
+    border: 1px solid var(--line); background: #101735; box-shadow: 0 30px 80px rgba(0,0,0,.5);
+    margin-top: 30px;
+  }
+  .browser .bar { display: flex; align-items: center; gap: 7px; padding: 11px 15px; background: rgba(255,255,255,.05); border-bottom: 1px solid var(--line); }
+  .browser .dot { width: 10px; height: 10px; border-radius: 999px; background: rgba(255,255,255,.18); }
+  .browser .dot:nth-child(1){ background:#f87171 } .browser .dot:nth-child(2){ background:#fbbf24 } .browser .dot:nth-child(3){ background:#34d399 }
+  .browser .url { margin-left: 10px; font-size: 12px; color: var(--muted); font-family: ui-monospace, "JetBrains Mono", Menlo, monospace; background: rgba(255,255,255,.05); padding: 4px 12px; border-radius: 999px; flex: 1; }
+  .browser .body { padding: 26px 28px 30px; min-height: 240px; position: relative; }
+  .jd { margin-bottom: 6px; }
+  .jd .t { font-size: 21px; font-weight: 800; }
+  .jd .c { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .jd .meta { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .jd .desc { margin-top: 14px; height: 7px; border-radius: 4px; background: rgba(255,255,255,.10); }
+  .jd .desc + .desc { margin-top: 7px; }
+  .jd .desc.w70 { width: 70% } .jd .desc.w85 { width: 85% } .jd .desc.w60 { width: 60% }
+
+  /* floating badge mock */
+  .bmock { position: absolute; right: 22px; bottom: 20px; display: flex; align-items: center; gap: 8px; }
+  .btn-clip { cursor: pointer; display: inline-flex; align-items: center; gap: 7px; padding: 10px 17px; font-size: 13px; font-weight: 700; border-radius: 9999px; background: #4f46e5; color: #fff; border: 1px solid #4338ca; box-shadow: 0 8px 22px rgba(79,70,229,.5); transition: all .2s; }
+  .btn-clip:hover { transform: translateY(-2px); background: #4338ca; }
+  .btn-dash { cursor: pointer; width: 40px; height: 40px; border-radius: 999px; background: #fff; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; justify-content: center; font-size: 17px; transition: all .2s; }
+  .btn-dash:hover { transform: scale(1.1); }
+  .btn-x { cursor: pointer; width: 24px; height: 24px; border-radius: 999px; background: rgba(255,255,255,.12); border: 1px solid var(--line); color: #cbd5e1; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; }
+  .saved-pill { display: inline-flex; align-items: center; gap: 7px; padding: 10px 17px; font-size: 13px; font-weight: 700; border-radius: 9999px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+
+  /* score card mock */
+  .scorewrap { display: flex; gap: 26px; align-items: stretch; justify-content: center; margin-top: 30px; flex-wrap: wrap; }
+  .scard { width: 330px; max-width: 88vw; text-align: left; background: #0d1330; border: 1px solid var(--line); border-radius: 18px; padding: 20px 20px 16px; font-size: 13px; }
+  .scard .head { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 12px; font-weight: 800; margin-bottom: 12px; }
+  .head.apply { background: rgba(52,211,153,.12); border: 1px solid rgba(52,211,153,.35); color: #a7f3d0; }
+  .scard .score { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: rgba(255,255,255,.9); border: 1px solid currentColor; }
+  .scard .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 10px 0 5px; }
+  .scard .reason { font-size: 12.5px; color: var(--muted); font-style: italic; background: rgba(255,255,255,.04); border: 1px solid var(--line); padding: 8px 10px; border-radius: 10px; margin-top: 10px; }
+  .ai-badge { font-size: 8.5px; font-weight: 800; letter-spacing: .1em; padding: 2px 6px; border-radius: 6px; background: #4f46e5; color: #fff; }
+
+  /* mini kanban */
+  .kboard { display: flex; gap: 10px; margin-top: 34px; align-items: flex-start; }
+  .kcol { width: 138px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); padding: 10px 9px; text-align: left; }
+  .kcol h4 { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 8px; padding-left: 2px; }
+  .kcol .count { float: right; font-size: 10px; color: var(--muted); }
+  .kcard2 { background: #131b3d; border: 1px solid var(--line); border-radius: 9px; padding: 8px 8px 9px; margin-bottom: 7px; font-size: 11px; }
+  .kcard2 .k2t { font-weight: 700; line-height: 1.25; }
+  .kcard2 .k2c { font-size: 9.5px; color: var(--muted); margin-top: 2px; }
+  .ktag { display: inline-block; font-size: 8.5px; font-weight: 800; padding: 1.5px 6px; border-radius: 999px; margin-top: 4.5px; }
+  .ktag.g { background: rgba(52,211,153,.15); color: #86efac; }
+  .ktag.a { background: rgba(251,191,36,.14); color: #fcd34d; }
+  .ktag.r { background: rgba(251,113,133,.14); color: #fda4af; }
+  .kdrop { border: 1.5px dashed rgba(129,140,248,.5); border-radius: 9px; height: 34px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--indigo2); font-weight: 700; animation: pulse 1.4s infinite; }
+
+  /* architecture diagram */
+  .diagram { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 34px; }
+  .drow { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
+  .dbox { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 22px; text-align: left; min-width: 190px; }
+  .dbox .t { font-size: 14.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .dbox .d { font-size: 12.5px; color: var(--muted); margin-top: 5px; line-height: 1.45; }
+  .dbox.hero { border-color: rgba(129,140,248,.5); background: rgba(99,102,241,.08); }
+  .darrow { font-size: 22px; color: var(--indigo2); }
+  .darrow.down { animation: downflow 1.8s ease-in-out infinite; }
+  @keyframes downflow { 0%,100% { transform: translateY(0); opacity:.5 } 50% { transform: translateY(6px); opacity:1 } }
+
+  /* stack grid */
+  .grid6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 36px; max-width: 900px; }
+  .tech { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; text-align: left; transition: transform .25s, border-color .25s; }
+  .tech:hover { transform: translateY(-4px); border-color: rgba(129,140,248,.5); }
+  .tech .tt { font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+  .tech .td { font-size: 12.5px; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+
+  /* lessons */
+  .lessons { max-width: 900px; margin-top: 34px; text-align: left; display: grid; gap: 13px; }
+  .lesson { display: flex; gap: 16px; align-items: flex-start; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 17px 20px; }
+  .lesson .k { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; background: linear-gradient(135deg, var(--indigo), #8b5cf6); color: #fff; }
+  .lesson b { font-size: 15.5px; }
+  .lesson span { display: block; font-size: 13.5px; color: var(--muted); margin-top: 2px; line-height: 1.5; }
+
+  /* big stat */
+  .stats { display: flex; gap: 60px; margin-top: 42px; flex-wrap: wrap; justify-content: center; }
+  .stat .v { font-size: 54px; font-weight: 800; letter-spacing: -.03em; }
+  .stat .l { font-size: 13px; color: var(--muted); margin-top: 4px; letter-spacing: .04em; }
+
+  /* ---------- chrome: progress, counters, controls, notes ---------- */
+  .progress { position: fixed; top: 0; left: 0; right: 0; height: 3.5px; z-index: 50; background: rgba(255,255,255,.07); }
+  .progress .bar { height: 100%; width: 0; background: linear-gradient(90deg, var(--indigo), var(--emerald)); transition: width .5s cubic-bezier(.2,.7,.3,1); }
+  .frag { position: fixed; left: 26px; bottom: 22px; z-index: 50; font-size: 12.5px; color: var(--muted); font-family: ui-monospace, Menlo, monospace; }
+  .brandmark { position: fixed; right: 26px; bottom: 22px; z-index: 50; font-size: 12.5px; color: var(--muted); display: flex; gap: 10px; align-items: center; }
+  .navbtns { position: fixed; right: 26px; top: 50%; transform: translateY(-50%); z-index: 50; display: flex; flex-direction: column; gap: 8px; }
+  .navbtns button, .notetoggle {
+    width: 40px; height: 40px; border-radius: 999px; border: 1px solid var(--line);
+    background: rgba(255,255,255,.05); color: var(--ink); font-size: 16px; cursor: pointer;
+    transition: all .2s; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .navbtns button:hover, .notetoggle:hover { background: rgba(99,102,241,.35); border-color: rgba(129,140,248,.6); }
+  .notetoggle { position: fixed; right: 26px; top: 26px; z-index: 50; width: auto; padding: 0 16px; font-size: 12.5px; font-weight: 700; gap: 7px; height: 38px; }
+  .notetoggle.on { background: rgba(99,102,241,.55); }
+
+  .notes {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 60;
+    max-height: 34vh; overflow-y: auto;
+    background: rgba(8,12,26,.96); border-top: 1px solid var(--line);
+    padding: 18px 120px 26px 30px;
+    transform: translateY(101%); transition: transform .45s cubic-bezier(.2,.7,.3,1);
+    backdrop-filter: blur(10px);
+  }
+  .notes.show { transform: none; }
+  .notes .nt { font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--indigo2); display: flex; align-items: center; gap: 14px; margin-bottom: 9px; }
+  .notes .nt .tm { color: var(--amber); background: rgba(251,191,36,.1); border: 1px solid rgba(251,191,36,.3); padding: 2px 9px; border-radius: 999px; letter-spacing: .06em; }
+  .notes .nt .cd { color: var(--muted); font-weight: 600; }
+  .notes p { font-size: 14.5px; line-height: 1.72; color: #c9d3ee; white-space: pre-wrap; max-width: 1100px; }
+
+  .hint { position: fixed; top: 30px; left: 30px; z-index: 50; font-size: 11.5px; color: var(--muted); letter-spacing: .05em; }
+  .hint b { color: var(--ink); }
+
+  @media (max-width: 760px) {
+    .slide { padding: 40px 28px 120px; }
+    .slide h1 { font-size: 42px; } .slide h2 { font-size: 30px; }
+    .grid6 { grid-template-columns: 1fr; }
+    .kboard { transform: scale(.62); margin-top: 6px; }
+    .browser .body { padding: 18px 16px 26px; }
+    .notes { padding-right: 30px; }
+  }
+</style>
+</head>
+<body>
+<div class="decor"><div class="orb a"></div><div class="orb b"></div></div>
+<div class="progress"><div class="bar" id="bar"></div></div>
+<div class="hint">Keys: <b>← →</b> navigate · <b>S</b> script · <b>F</b> fullscreen</div>
+
+<div class="deck" id="deck">
+
+  <!-- ============ 1 · TITLE ============ -->
+  <section class="slide" data-title="Title" data-time="0:15" data-script="Hi everyone — I'm Eslam, and this is JobLint: an AI job hunter and Kanban tracker that lives right inside your browser. In the next five minutes, I'll show you the problem it solves, a quick demo, how it's built, and what I learned along the way.">
+    <span class="kicker grad" data-anim style="--d:0">Chrome Extension · Manifest V3</span>
+    <h1 data-anim style="--d:1">Job<span class="grad">Lint</span></h1>
+    <p class="lead" data-anim style="--d:2">AI Job Hunter &amp; Kanban Tracker — automated job clipping, fit evaluation, skill-gap analysis, and a six-stage pipeline. All inside your browser. All 100% local.</p>
+    <div class="stats" data-anim style="--d:3">
+      <div class="stat"><div class="v grad">LinkedIn</div><div class="l">+ Indeed, 6 countries</div></div>
+      <div class="stat"><div class="v grad">1-click</div><div class="l">Clip → Score → Track</div></div>
+      <div class="stat"><div class="v grad">0</div><div class="l">Backends · accounts · telemetry</div></div>
+    </div>
+  </section>
+
+  <!-- ============ 2 · WHY divider ============ -->
+  <section class="slide" data-title="Why?" data-time="0:05" data-script="So — why did I build this at all?">
+    <span class="kicker grad" data-anim style="--d:0">Part 1</span>
+    <h1 data-anim style="--d:1" class="grad">Why?</h1>
+    <p class="lead" data-anim style="--d:2">The problem I set out to solve.</p>
+  </section>
+
+  <!-- ============ 3 · Problem: data entry ============ -->
+  <section class="slide" data-title="Job hunting is a data-entry job" data-time="0:40" data-script="Job hunting today is basically a data-entry job. You scroll LinkedIn or Indeed, find a role that looks interesting, and then manually copy-paste the title, company, and description into a spreadsheet or a notes app. It's slow, it's error-prone, and after fifty applications you have no overview of what you've actually applied to. The most important question — should I spend my time applying to THIS job? — ends up being answered by gut feeling, not by data.">
+    <span class="kicker grad" data-anim style="--d:0">The Problem</span>
+    <h2 data-anim style="--d:1">Job hunting is a<br><span class="grad">data-entry job</span></h2>
+    <div class="row" data-anim style="--d:2">
+      <div class="card"><div class="ico">📋</div><h3>Copy-paste pipeline</h3><p>Title, company, description — re-typed by hand from job boards into spreadsheets and notes apps.</p></div>
+      <div class="card"><div class="ico">🧩</div><h3>No overview</h3><p>After 50+ applications: scattered spreadsheets, forgotten stages, zero status tracking.</p></div>
+      <div class="card"><div class="ico">🎲</div><h3>Gut-feel decisions</h3><p>"Should I apply to this job?" — answered by instinct, not by data. Time gets wasted on bad fits.</p></div>
+    </div>
+  </section>
+
+  <!-- ============ 4 · Problem: fit + red flags ============ -->
+  <section class="slide" data-title="Two hidden problems" data-time="0:40" data-script="And there are two deeper problems hiding under the disorganization. First, fit evaluation: job descriptions are long, and actually checking a posting against your skills takes real time — so we skip it and apply blind. Second, red flags are easy to miss: commission-only pay, unpaid internships, or a junior role demanding five years of experience. The result — we either waste applications on jobs we were never going to get, or we miss the good ones buried under the noise. I wanted a tool that reads the posting for me, scores it against my profile, and keeps the pipeline tidy. That's why.">
+    <span class="kicker grad" data-anim style="--d:0">The Problem · Deeper</span>
+    <h2 data-anim style="--d:1">Two hidden problems<br>behind the mess</h2>
+    <div class="row" data-anim style="--d:2">
+      <div class="card"><div class="ico">🧠</div><h3>Fit evaluation is expensive</h3><p>Long descriptions × your actual stack = real analysis time. Too slow — so we apply blind.</p></div>
+      <div class="card"><div class="ico">⚠️</div><h3>Red flags hide in plain sight</h3><p>Commission-only pay. Unpaid "experience". A junior role demanding 5+ years. Easy to miss at scroll speed.</p></div>
+    </div>
+    <p class="lead" data-anim style="--d:3; margin-top:26px">I wanted a tool that <b>reads the posting for me</b>, scores it against <b>my profile</b>, and keeps the pipeline tidy.</p>
+  </section>
+
+  <!-- ============ 5 · WHAT divider ============ -->
+  <section class="slide" data-title="What?" data-time="0:05" data-script="So here's what I built — JobLint, in one glance.">
+    <span class="kicker grad" data-anim style="--d:0">Part 2</span>
+    <h1 data-anim style="--d:1" class="grad">What?</h1>
+    <p class="lead" data-anim style="--d:2">A Chrome extension that lives on LinkedIn &amp; Indeed.</p>
+  </section>
+
+  <!-- ============ 6 · JobLint at a glance ============ -->
+  <section class="slide" data-title="JobLint at a glance" data-time="0:30" data-script="So here's JobLint: a Chrome extension, built on Manifest V3, that lives directly on LinkedIn and Indeed. It detects the job you're looking at, clips it with one click, evaluates how well it fits your candidate profile — instantly, offline, with an optional AI layer on top — and drops it into a six-stage Kanban board. And a key design decision: every job, every evaluation, every note stays 100% local in your browser, in IndexedDB. No accounts, no servers, no analytics.">
+    <span class="kicker grad" data-anim style="--d:0">JobLint at a Glance</span>
+    <h2 data-anim style="--d:1">Detect → Clip → Score → Track</h2>
+    <div class="steps">
+      <div class="step" data-anim style="--d:2"><span class="n">1</span><h3>⚡ Auto-detect &amp; clip</h3><p>Floating badge on every LinkedIn &amp; Indeed job page. One click extracts everything.</p></div>
+      <span class="arrow">→</span>
+      <div class="step" data-anim style="--d:3"><span class="n">2</span><h3>🧠 Evaluate the fit</h3><p>Instant offline heuristics + optional LLM layer. Score 1–5 with a clear verdict.</p></div>
+      <span class="arrow">→</span>
+      <div class="step" data-anim style="--d:4"><span class="n">3</span><h3>📊 Track the pipeline</h3><p>Six-stage Kanban pipeline with drag-and-drop, search, notes, and CSV/JSON export.</p></div>
+    </div>
+    <p class="lead" data-anim style="--d:5; margin-top:28px">Everything stored <b>100% locally</b> — IndexedDB, no accounts, no analytics.</p>
+  </section>
+
+  <!-- ============ 7 · Demo 1: floating badge ============ -->
+  <section class="slide" data-title="Demo · The floating badge" data-time="0:45" data-script="Let me show you how it feels in practice. You open any job on LinkedIn. Within a second, a floating badge appears in the corner — injected as an isolated Shadow DOM, so the site's own CSS can never break it. One click on 'Clip to Kanban' — the extension extracts the title, company, location, salary, and the full cleaned job description, checks it against your board for duplicates, and confirms. No highlighting, no copy-paste, no switching to another app. If you've already saved the posting, the badge flips to 'In Kanban' so you never clip the same job twice. And it's layered to survive the site's dynamic layouts — search split-panes, guest views, collections — plus Indeed in six countries.">
+    <span class="kicker grad" data-anim style="--d:0">Demo 1 · One-Click Clipper</span>
+    <h2 data-anim style="--d:1">A floating badge on every job page</h2>
+    <div class="browser" data-anim style="--d:2">
+      <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">linkedin.com/jobs/view/4215…</span></div>
+      <div class="body">
+        <div class="jd">
+          <div class="t">Senior Full Stack Engineer</div>
+          <div class="c">Acme Robotics · Berlin, Germany (Hybrid)</div>
+          <div class="meta"><span class="chip gr">€90K – €110K</span><span class="chip gr">Full-time</span><span class="chip gr">Hybrid</span></div>
+          <div class="desc w85"></div><div class="desc w85"></div><div class="desc w70"></div><div class="desc w60"></div>
+        </div>
+        <div class="bmock">
+          <span class="btn-clip" id="demoClip">⚡ Clip to Kanban</span>
+          <span class="btn-dash">📊</span>
+          <span class="btn-x">×</span>
+        </div>
+      </div>
+    </div>
+    <div class="row" data-anim style="--d:3">
+      <div class="card"><h3>🧱 Shadow DOM isolated</h3><p>Site CSS can never break or restyle the badge. Maximum z-index, fixed positioning.</p></div>
+      <div class="card"><h3>🛡️ Dedup built-in</h3><p>Already saved? The badge flips to a green <b>✓ In Kanban</b> — never clip twice.</p></div>
+      <div class="card"><h3>🌍 Layered detection</h3><p>Multiple selector fallbacks survive LinkedIn's dynamic split-panes and guest views, plus Indeed worldwide.</p></div>
+    </div>
+  </section>
+
+  <!-- ============ 8 · Demo 2: evaluation engine ============ -->
+  <section class="slide" data-title="Demo · Dual-tier evaluation" data-time="0:50" data-script="Next — the part I care most about: evaluation. Tier one is a deterministic heuristic engine that runs instantly in the browser: it matches the description against your skills, classifies the role archetype and seniority, scores location compatibility, and hunts for red flags like commission-only pay or absurd experience requirements. All of it feeds a weighted global score from one to five, with a clear verdict: Apply, Apply with caution, or Skip. Tier two is optional: plug in any OpenAI-compatible API — OpenRouter, OpenAI, Groq, even a local Ollama — and the LLM re-ranks the posting with candidate-specific reasoning, flagged here with the AI badge. And if the API fails or rate-limits, it falls back silently to heuristics. The score never disappears.">
+    <span class="kicker grad" data-anim style="--d:0">Demo 2 · Fit Evaluation</span>
+    <h2 data-anim style="--d:1">Dual-tier evaluation: <span class="grad">heuristics + LLM</span></h2>
+    <div class="scorewrap">
+      <div class="scard" data-anim style="--d:2">
+        <div class="head apply"><span>🟢 Apply <span class="ai-badge">AI</span></span><span class="score">4.2 / 5.0</span></div>
+        <div>
+          <span class="chip in">Full Stack</span><span class="chip gr">Senior</span><span class="chip gr">Hybrid</span><span class="chip em">Location 5/5</span>
+        </div>
+        <div class="reason">"Strong Full Stack match (TypeScript, React, Node.js) with high profile alignment."</div>
+        <div class="label">Matched Skills</div>
+        <div><span class="chip em">✓ TypeScript</span><span class="chip em">✓ React</span><span class="chip em">✓ Node.js</span><span class="chip em">✓ PostgreSQL</span></div>
+        <div class="label">Gaps</div>
+        <div><span class="chip am">✕ Kafka</span><span class="chip am">✕ Kubernetes</span></div>
+      </div>
+      <div class="scard" data-anim style="--d:3">
+        <div class="head apply" style="background:rgba(251,191,36,.10);border-color:rgba(251,191,36,.35);color:#fde68a"><span>🟡 Caution</span><span class="score">3.4 / 5.0</span></div>
+        <div>
+          <span class="chip in">Backend</span><span class="chip gr">Mid</span><span class="chip gr">On-site</span>
+        </div>
+        <div style="font-size:12px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);color:#fcd34d;padding:7px 9px;border-radius:10px;margin-top:8px">⚠️ 5+ years required for junior role</div>
+        <div class="reason">"Caution: 5+ years required for junior role. React, Node.js found."</div>
+        <div class="label">Engine Highlights</div>
+        <div style="font-size:12.5px;color:var(--muted);line-height:1.6">Skill tokenizer · Archetype &amp; seniority detection · Location compatibility scoring · Red-flag hunter · Weighted global score</div>
+      </div>
+    </div>
+    <p class="lead" data-anim style="--d:4; margin-top:22px">API down or rate-limited? <b>Silent fallback</b> to heuristics — the verdict never disappears.</p>
+  </section>
+
+  <!-- ============ 9 · Demo 3: Kanban ============ -->
+  <section class="slide" data-title="Demo · The pipeline board" data-time="0:35" data-script="And everything lands here: a fullscreen Kanban board with six stages — To Apply, Applied, Assessment, Interviewing, Offer, Rejected. Cards are native HTML5 drag-and-drop, so you can reorder within a column or drag across stages. There's real-time search by title or company, and a slide-out details drawer with the full description, a notes editor, and direct re-evaluation. When you want your data back out, there's CSV export for spreadsheets and a full JSON backup and restore to move your entire job search between browsers or machines.">
+    <span class="kicker grad" data-anim style="--d:0">Demo 3 · The Pipeline</span>
+    <h2 data-anim style="--d:1">A six-stage pipeline board</h2>
+    <div class="kboard" data-anim style="--d:2">
+      <div class="kcol"><h4>To Apply <span class="count">2</span></h4>
+        <div class="kcard2"><div class="k2t">Senior Full Stack Eng.</div><div class="k2c">Acme Robotics</div><span class="ktag g">4.2 · Apply</span></div>
+        <div class="kcard2"><div class="k2t">Frontend Developer</div><div class="k2c">Pixelform</div><span class="ktag a">3.6 · Caution</span></div>
+      </div>
+      <div class="kcol"><h4>Applied <span class="count">1</span></h4>
+        <div class="kcard2"><div class="k2t">Full Stack Engineer</div><div class="k2c">Nordwind</div><span class="ktag g">4.0 · Apply</span></div>
+      </div>
+      <div class="kcol"><h4>Assessment</h4><div class="kdrop">drop here</div></div>
+      <div class="kcol"><h4>Interviewing <span class="count">1</span></h4>
+        <div class="kcard2"><div class="k2t">Backend Engineer</div><div class="k2c">Streamly</div><span class="ktag g">4.1 · Apply</span></div>
+      </div>
+      <div class="kcol"><h4>Offer</h4><div class="kdrop">drop here</div></div>
+      <div class="kcol"><h4>Rejected <span class="count">1</span></h4>
+        <div class="kcard2"><div class="k2t">Junior DevOps</div><div class="k2c">Cicada</div><span class="ktag r">2.1 · Skip</span></div>
+      </div>
+    </div>
+    <div class="row" data-anim style="--d:3">
+      <div class="card"><h3>🖱️ Native HTML5 drag &amp; drop</h3><p>Reorder within columns, progress across stages.</p></div>
+      <div class="card"><h3>🔎 Details drawer</h3><p>Full description, notes editor, stage switcher, re-evaluation.</p></div>
+      <div class="card"><h3>📤 CSV &amp; JSON export</h3><p>Spreadsheet-ready export, full backup &amp; restore between machines.</p></div>
+    </div>
+  </section>
+
+  <!-- ============ 10 · HOW divider ============ -->
+  <section class="slide" data-title="How?" data-time="0:05" data-script="Now — how is it actually built?">
+    <span class="kicker grad" data-anim style="--d:0">Part 3</span>
+    <h1 data-anim style="--d:1" class="grad">How?</h1>
+    <p class="lead" data-anim style="--d:2">Architecture &amp; the tech stack.</p>
+  </section>
+
+  <!-- ============ 11 · Architecture ============ -->
+  <section class="slide" data-title="Architecture" data-time="0:40" data-script="Architecturally, everything is wired through a background service worker with five entrypoints. Content scripts handle the DOM detection and the floating badge. The background worker owns persistence and message routing — it's the single gateway to the IndexedDB store. Popup, dashboard, profile, and AI settings are independent pages over the same store, so there's one source of truth. The scoring engine itself is a pure, testable module, and the LLM runner sits behind the same interface — which means the AI is a plug-in, not a dependency.">
+    <span class="kicker grad" data-anim style="--d:0">How · Architecture</span>
+    <h2 data-anim style="--d:1">Five entrypoints, one gateway, one source of truth</h2>
+    <div class="diagram" data-anim style="--d:2">
+      <div class="drow">
+        <div class="dbox"><div class="t">🌐 LinkedIn / Indeed</div><div class="d">Job sites — dynamic, redesigned often</div></div>
+        <span class="darrow">⇄</span>
+        <div class="dbox"><div class="t">🧩 Content script</div><div class="d">Platform DOM detectors + Shadow DOM floating badge</div></div>
+        <span class="darrow">⇄</span>
+        <div class="dbox hero"><div class="t">⚙️ Background service worker</div><div class="d">Message routing · clip · dedup · persistence</div></div>
+      </div>
+      <span class="darrow down">↓</span>
+      <div class="drow">
+        <div class="dbox hero"><div class="t">🗄️ IndexedDB <small class="note">(one store)</small></div><div class="d">Jobs · evaluations · notes · profile · AI config — the single source of truth</div></div>
+        <span class="darrow">⇄</span>
+        <div class="dbox"><div class="t">🖥️ Popup · Dashboard · Profile · Options</div><div class="d">React pages over the same store</div></div>
+        <span class="darrow">⇄</span>
+        <div class="dbox"><div class="t">🧠 LLM API (optional)</div><div class="d">Any OpenAI-compatible endpoint, direct calls, own key</div></div>
+      </div>
+    </div>
+    <p class="lead" data-anim style="--d:3; margin-top:20px">The scoring engine is <b>pure &amp; testable</b> — the LLM sits behind the same interface. AI is a <b>plug-in, not a dependency</b>.</p>
+  </section>
+
+  <!-- ============ 12 · Tech stack ============ -->
+  <section class="slide" data-title="Tech stack" data-time="0:35" data-script="The stack: WXT as the extension bundler — it gave me hot reload, auto-generated manifests, and Firefox builds for free. React 19 with strict TypeScript across every page, Tailwind CSS v4 for styling, and the tiny idb wrapper over IndexedDB. Deliberately, there's no state-management library — React state plus one persistence hook covered everything. Zero backend, zero telemetry, and AI requests go directly from the browser to the provider using your own key. The whole thing type-checks and lints clean, and production builds zip in one command.">
+    <span class="kicker grad" data-anim style="--d:0">How · The Stack</span>
+    <h2 data-anim style="--d:1">Modern stack, <span class="grad">zero backend</span></h2>
+    <div class="grid6" data-anim style="--d:2">
+      <div class="tech"><div class="tt">⚡ WXT <small class="note">0.21</small></div><div class="td">Extension bundler: hot reload, auto-manifest, Firefox builds</div></div>
+      <div class="tech"><div class="tt">⚛️ React <small class="note">19</small></div><div class="td">All five entrypoints; React state only — no state library</div></div>
+      <div class="tech"><div class="tt">🛡️ TypeScript <small class="note">5.9</small></div><div class="td">Strict types end-to-end; tsc --noEmit + ESLint clean</div></div>
+      <div class="tech"><div class="tt">🎨 Tailwind <small class="note">v4</small></div><div class="td">CSS-first config via Vite plugin, shared styles</div></div>
+      <div class="tech"><div class="tt">🗄️ idb + IndexedDB</div><div class="td">Tiny promise wrapper; one job store, versioned schema</div></div>
+      <div class="tech"><div class="tt">🔌 OpenAI-compatible API</div><div class="td">OpenRouter · OpenAI · Groq · MiniMax · Ollama — direct, own key</div></div>
+    </div>
+    <p class="lead" data-anim style="--d:3; margin-top:22px">Built on <b>Manifest V3</b> · permissions: activeTab, storage, tabs, scripting · zero remote calls besides your AI provider.</p>
+  </section>
+
+  <!-- ============ 13 · Insights ============ -->
+  <section class="slide" data-title="Insights & lessons learned" data-time="0:50" data-script="A few lessons from building this. One: the DOM is the hard part. Job sites redesign constantly, so detection has to be layered — multiple selector fallbacks, URL parsing, meta tags, canonical links — and defensive by default. Two: Shadow DOM is essential whenever you inject UI into pages you don't control. Three: graceful degradation beats failure — making the AI layer optional, with silent fallback, felt like a design win, not a compromise. Four: local-first is a feature in itself — no accounts, no servers, no privacy tradeoffs, and users notice. And five, maybe the most important: scoping to one clear workflow — clip, score, track — is what made the product coherent. Every feature that didn't serve that loop got cut.">
+    <span class="kicker grad" data-anim style="--d:0">Part 4 · Insights</span>
+    <h2 data-anim style="--d:1">Lessons learned</h2>
+    <div class="lessons">
+      <div class="lesson" data-anim style="--d:2"><span class="k">1</span><div><b>The DOM is the hard part</b><span>Job sites redesign constantly — detection must be layered (selector fallbacks, URLs, meta tags) and defensive by default.</span></div></div>
+      <div class="lesson" data-anim style="--d:3"><span class="k">2</span><div><b>Shadow DOM is non-negotiable</b><span>When you inject UI into pages you don't control, style isolation is the difference between "works" and "works everywhere".</span></div></div>
+      <div class="lesson" data-anim style="--d:4"><span class="k">3</span><div><b>Graceful degradation beats failure</b><span>AI optional + silent heuristic fallback = the verdict never disappears. Design win, not compromise.</span></div></div>
+      <div class="lesson" data-anim style="--d:5"><span class="k">4</span><div><b>Local-first is a feature</b><span>No accounts, no servers, no privacy tradeoffs — users can feel the difference.</span></div></div>
+      <div class="lesson" data-anim style="--d:6"><span class="k">5</span><div><b>One clear workflow makes it coherent</b><span>Clip → Score → Track. Every feature that didn't serve that loop got cut.</span></div></div>
+    </div>
+  </section>
+
+  <!-- ============ 14 · Closing ============ -->
+  <section class="slide" data-title="Thanks" data-time="0:20" data-script="So — JobLint is open source, MIT-licensed, and installs in two minutes. What's next: a Chrome Web Store release, automatic evaluation on clip, and shipped Firefox builds. If you've ever lost track of a job application, this one's for you. Thanks!">
+    <span class="kicker grad" data-anim style="--d:0">Open Source · MIT</span>
+    <h1 data-anim style="--d:1">Stop applying blind.<br><span class="grad">Start tracking smart.</span></h1>
+    <p class="lead" data-anim style="--d:2">What's next: Chrome Web Store release · auto-evaluation on clip · shipped Firefox builds.</p>
+    <div class="row" data-anim style="--d:3">
+      <div class="card" style="text-align:center"><div class="ico">⚡</div><h3>Install in 2 min</h3><p>Load unpacked from a single production build.</p></div>
+      <div class="card" style="text-align:center"><div class="ico">🧠</div><h3>Works without AI</h3><p>Deterministic engine runs fully offline.</p></div>
+      <div class="card" style="text-align:center"><div class="ico">🔒</div><h3>100% private</h3><p>Local-first, zero telemetry, your own keys.</p></div>
+    </div>
+    <h2 data-anim style="--d:4; margin-top:40px; font-size:34px;">Thanks! <span class="grad">Questions?</span></h2>
+  </section>
+
+</div>
+
+<!-- chrome -->
+<div class="frag" id="frag">1 / 14</div>
+<div class="brandmark">⚡ <b>JobLint</b> · Presentation</div>
+<div class="navbtns"><button id="prev" title="Previous">↑</button><button id="next" title="Next">↓</button></div>
+<button class="notetoggle" id="noteBtn">📜 Script</button>
+<div class="notes" id="notes">
+  <div class="nt"><span>Presenter script</span><span class="tm" id="noteTime">0:15</span><span class="cd" id="noteCd">Slide 1 · Title</span></div>
+  <p id="noteText">...</p>
+</div>
+
+<script>
+  (function () {
+    var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+    var bar = document.getElementById('bar');
+    var frag = document.getElementById('frag');
+    var notes = document.getElementById('notes');
+    var noteText = document.getElementById('noteText');
+    var noteTime = document.getElementById('noteTime');
+    var noteCd = document.getElementById('noteCd');
+    var noteBtn = document.getElementById('noteBtn');
+    var cur = 0;
+
+    function render() {
+      slides.forEach(function (s, i) { s.classList.toggle('active', i === cur); });
+      bar.style.width = ((cur + 1) / slides.length * 100) + '%';
+      frag.textContent = (cur + 1) + ' / ' + slides.length;
+      var s = slides[cur];
+      noteText.textContent = s.getAttribute('data-script') || '';
+      noteTime.textContent = s.getAttribute('data-time') || '';
+      noteCd.textContent = 'Slide ' + (cur + 1) + ' · ' + (s.getAttribute('data-title') || '');
+      if (history.replaceState) history.replaceState(null, null, '#' + (cur + 1));
+    }
+    function go(n) {
+      cur = Math.max(0, Math.min(slides.length - 1, n));
+      render();
+    }
+
+    document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+    document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); go(cur + 1); }
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); go(cur - 1); }
+      else if (e.key === 'Home') { e.preventDefault(); go(0); }
+      else if (e.key === 'End') { e.preventDefault(); go(slides.length - 1); }
+      else if (e.key === 's' || e.key === 'S') { toggleNotes(); }
+      else if (e.key === 'f' || e.key === 'F') {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
+      }
+    });
+
+    function toggleNotes() {
+      notes.classList.toggle('show');
+      noteBtn.classList.toggle('on', notes.classList.contains('show'));
+    }
+    noteBtn.addEventListener('click', toggleNotes);
+
+    // touch swipe
+    var x0 = null;
+    document.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+    document.addEventListener('touchend', function (e) {
+      if (x0 === null) return;
+      var dx = e.changedTouches[0].clientX - x0;
+      if (dx < -50) go(cur + 1); else if (dx > 50) go(cur - 1);
+      x0 = null;
+    }, { passive: true });
+
+    // demo badge interaction
+    var clip = document.getElementById('demoClip');
+    if (clip) {
+      var state = 0;
+      clip.addEventListener('click', function () {
+        if (state === 0) {
+          state = 1;
+          clip.innerHTML = '⏳ Saving...';
+          setTimeout(function () {
+            state = 2;
+            clip.className = 'saved-pill';
+            clip.innerHTML = '✓ In Kanban';
+            setTimeout(function () { if (clip) clip.innerHTML = '✓ In Kanban'; }, 300);
+          }, 700);
+        } else if (state === 2) {
+          state = 0;
+          clip.className = 'btn-clip';
+          clip.innerHTML = '⚡ Clip to Kanban';
+        }
+      });
+    }
+
+    // deep link
+    var start = parseInt((location.hash || '').replace('#', ''), 10);
+    if (!isNaN(start) && start >= 1 && start <= slides.length) cur = start - 1;
+    render();
+  })();
+</script>
+</body>
+</html>
