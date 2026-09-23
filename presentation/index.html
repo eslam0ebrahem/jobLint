@@ -244,7 +244,7 @@
 <div class="deck" id="deck">
 
   <!-- ============ 1 · TITLE ============ -->
-  <section class="slide" data-title="Title" data-time="0:15" data-script="Hi everyone — I'm Eslam, and this is JobLint: an AI job hunter and Kanban tracker that lives right inside your browser. In the next five minutes, I'll show you the problem it solves, a quick demo, how it's built, and what I learned along the way.">
+  <section class="slide" data-title="Title" data-time="0:16" data-script="Hi everyone — I'm Eslam, and this is JobLint: an AI job hunter and Kanban tracker that lives inside your browser. In the next five minutes: the problem, a quick demo, how it's built, and what I learned.">
     <span class="kicker grad" data-anim style="--d:0">Chrome Extension · Manifest V3</span>
     <h1 data-anim style="--d:1">Job<span class="grad">Lint</span></h1>
     <p class="lead" data-anim style="--d:2">AI Job Hunter &amp; Kanban Tracker — automated job clipping, fit evaluation, skill-gap analysis, and a six-stage pipeline. All inside your browser. All 100% local.</p>
@@ -256,14 +256,14 @@
   </section>
 
   <!-- ============ 2 · WHY divider ============ -->
-  <section class="slide" data-title="Why?" data-time="0:05" data-script="So — why did I build this at all?">
+  <section class="slide" data-title="Why?" data-time="0:04" data-script="So — why did I build this at all?">
     <span class="kicker grad" data-anim style="--d:0">Part 1</span>
     <h1 data-anim style="--d:1" class="grad">Why?</h1>
     <p class="lead" data-anim style="--d:2">The problem I set out to solve.</p>
   </section>
 
   <!-- ============ 3 · Problem: data entry ============ -->
-  <section class="slide" data-title="Job hunting is a data-entry job" data-time="0:40" data-script="Job hunting today is basically a data-entry job. You scroll LinkedIn or Indeed, find a role that looks interesting, and then manually copy-paste the title, company, and description into a spreadsheet or a notes app. It's slow, it's error-prone, and after fifty applications you have no overview of what you've actually applied to. The most important question — should I spend my time applying to THIS job? — ends up being answered by gut feeling, not by data.">
+  <section class="slide" data-title="Job hunting is a data-entry job" data-time="0:25" data-script="Job hunting today is basically a data-entry job. You scroll LinkedIn or Indeed, find something interesting, then manually copy-paste the title, company, and description into a spreadsheet. After fifty applications you have no overview — and the one question that matters, 'should I apply to this job?', gets answered by gut feeling, not data.">
     <span class="kicker grad" data-anim style="--d:0">The Problem</span>
     <h2 data-anim style="--d:1">Job hunting is a<br><span class="grad">data-entry job</span></h2>
     <div class="row" data-anim style="--d:2">
@@ -274,7 +274,7 @@
   </section>
 
   <!-- ============ 4 · Problem: fit + red flags ============ -->
-  <section class="slide" data-title="Two hidden problems" data-time="0:40" data-script="And there are two deeper problems hiding under the disorganization. First, fit evaluation: job descriptions are long, and actually checking a posting against your skills takes real time — so we skip it and apply blind. Second, red flags are easy to miss: commission-only pay, unpaid internships, or a junior role demanding five years of experience. The result — we either waste applications on jobs we were never going to get, or we miss the good ones buried under the noise. I wanted a tool that reads the posting for me, scores it against my profile, and keeps the pipeline tidy. That's why.">
+  <section class="slide" data-title="Two hidden problems" data-time="0:31" data-script="Under that disorganization hide two deeper problems. First, fit evaluation is expensive: descriptions are long, and really checking a posting against your skills takes time — so we apply blind. Second, red flags are easy to miss: commission-only pay, unpaid 'experience', a junior role demanding five years. I wanted a tool that reads the posting for me, scores it against my profile, and keeps the pipeline tidy. That's why.">
     <span class="kicker grad" data-anim style="--d:0">The Problem · Deeper</span>
     <h2 data-anim style="--d:1">Two hidden problems<br>behind the mess</h2>
     <div class="row" data-anim style="--d:2">
@@ -285,14 +285,14 @@
   </section>
 
   <!-- ============ 5 · WHAT divider ============ -->
-  <section class="slide" data-title="What?" data-time="0:05" data-script="So here's what I built — JobLint, in one glance.">
+  <section class="slide" data-title="What?" data-time="0:04" data-script="So here's what I built — JobLint, in one glance.">
     <span class="kicker grad" data-anim style="--d:0">Part 2</span>
     <h1 data-anim style="--d:1" class="grad">What?</h1>
     <p class="lead" data-anim style="--d:2">A Chrome extension that lives on LinkedIn &amp; Indeed.</p>
   </section>
 
   <!-- ============ 6 · JobLint at a glance ============ -->
-  <section class="slide" data-title="JobLint at a glance" data-time="0:30" data-script="So here's JobLint: a Chrome extension, built on Manifest V3, that lives directly on LinkedIn and Indeed. It detects the job you're looking at, clips it with one click, evaluates how well it fits your candidate profile — instantly, offline, with an optional AI layer on top — and drops it into a six-stage Kanban board. And a key design decision: every job, every evaluation, every note stays 100% local in your browser, in IndexedDB. No accounts, no servers, no analytics.">
+  <section class="slide" data-title="JobLint at a glance" data-time="0:29" data-script="So here's JobLint: a Chrome extension on Manifest V3 that lives directly on LinkedIn and Indeed. It detects the job you're viewing, clips it with one click, evaluates fit against your profile — instantly, offline, with an optional AI layer — and drops it into a six-stage Kanban board. And a key design decision: everything stays 100% local in your browser. No accounts, no servers, no analytics.">
     <span class="kicker grad" data-anim style="--d:0">JobLint at a Glance</span>
     <h2 data-anim style="--d:1">Detect → Clip → Score → Track</h2>
     <div class="steps">
@@ -306,7 +306,7 @@
   </section>
 
   <!-- ============ 7 · Demo 1: floating badge ============ -->
-  <section class="slide" data-title="Demo · The floating badge" data-time="0:45" data-script="Let me show you how it feels in practice. You open any job on LinkedIn. Within a second, a floating badge appears in the corner — injected as an isolated Shadow DOM, so the site's own CSS can never break it. One click on 'Clip to Kanban' — the extension extracts the title, company, location, salary, and the full cleaned job description, checks it against your board for duplicates, and confirms. No highlighting, no copy-paste, no switching to another app. If you've already saved the posting, the badge flips to 'In Kanban' so you never clip the same job twice. And it's layered to survive the site's dynamic layouts — search split-panes, guest views, collections — plus Indeed in six countries.">
+  <section class="slide" data-title="Demo · The floating badge" data-time="0:38" data-script="Let me show you how it feels. You open any job on LinkedIn — within a second, a floating badge appears in the corner, injected as isolated Shadow DOM so the site's own CSS can never break it. One click on 'Clip to Kanban' extracts the title, company, salary, and full cleaned description, checks for duplicates, and confirms. Already saved? The badge flips to 'In Kanban' so you never clip twice. And layered detection survives LinkedIn's dynamic layouts, plus Indeed in six countries.">
     <span class="kicker grad" data-anim style="--d:0">Demo 1 · One-Click Clipper</span>
     <h2 data-anim style="--d:1">A floating badge on every job page</h2>
     <div class="browser" data-anim style="--d:2">
@@ -333,7 +333,7 @@
   </section>
 
   <!-- ============ 8 · Demo 2: evaluation engine ============ -->
-  <section class="slide" data-title="Demo · Dual-tier evaluation" data-time="0:50" data-script="Next — the part I care most about: evaluation. Tier one is a deterministic heuristic engine that runs instantly in the browser: it matches the description against your skills, classifies the role archetype and seniority, scores location compatibility, and hunts for red flags like commission-only pay or absurd experience requirements. All of it feeds a weighted global score from one to five, with a clear verdict: Apply, Apply with caution, or Skip. Tier two is optional: plug in any OpenAI-compatible API — OpenRouter, OpenAI, Groq, even a local Ollama — and the LLM re-ranks the posting with candidate-specific reasoning, flagged here with the AI badge. And if the API fails or rate-limits, it falls back silently to heuristics. The score never disappears.">
+  <section class="slide" data-title="Demo · Dual-tier evaluation" data-time="0:40" data-script="Now the part I care most about: evaluation. Tier one is a deterministic engine that runs instantly in the browser — it matches the description against your skills, classifies role and seniority, scores location compatibility, and hunts red flags. All of it feeds a weighted score from one to five, with a verdict: Apply, Caution, or Skip. Tier two is optional: plug in any OpenAI-compatible API — even a local Ollama — and the LLM re-ranks the posting with reasoning, flagged with the AI badge. If the API fails, it silently falls back to heuristics. The score never disappears.">
     <span class="kicker grad" data-anim style="--d:0">Demo 2 · Fit Evaluation</span>
     <h2 data-anim style="--d:1">Dual-tier evaluation: <span class="grad">heuristics + LLM</span></h2>
     <div class="scorewrap">
@@ -363,7 +363,7 @@
   </section>
 
   <!-- ============ 9 · Demo 3: Kanban ============ -->
-  <section class="slide" data-title="Demo · The pipeline board" data-time="0:35" data-script="And everything lands here: a fullscreen Kanban board with six stages — To Apply, Applied, Assessment, Interviewing, Offer, Rejected. Cards are native HTML5 drag-and-drop, so you can reorder within a column or drag across stages. There's real-time search by title or company, and a slide-out details drawer with the full description, a notes editor, and direct re-evaluation. When you want your data back out, there's CSV export for spreadsheets and a full JSON backup and restore to move your entire job search between browsers or machines.">
+  <section class="slide" data-title="Demo · The pipeline board" data-time="0:23" data-script="Everything lands here: a six-stage board — To Apply, Applied, Assessment, Interviewing, Offer, Rejected — with native drag-and-drop, real-time search, and a details drawer with the full description, notes, and re-evaluation. Your data comes back out as CSV for spreadsheets, or a full JSON backup and restore to move your search between machines.">
     <span class="kicker grad" data-anim style="--d:0">Demo 3 · The Pipeline</span>
     <h2 data-anim style="--d:1">A six-stage pipeline board</h2>
     <div class="kboard" data-anim style="--d:2">
@@ -391,14 +391,14 @@
   </section>
 
   <!-- ============ 10 · HOW divider ============ -->
-  <section class="slide" data-title="How?" data-time="0:05" data-script="Now — how is it actually built?">
+  <section class="slide" data-title="How?" data-time="0:03" data-script="Now — how is it actually built?">
     <span class="kicker grad" data-anim style="--d:0">Part 3</span>
     <h1 data-anim style="--d:1" class="grad">How?</h1>
     <p class="lead" data-anim style="--d:2">Architecture &amp; the tech stack.</p>
   </section>
 
   <!-- ============ 11 · Architecture ============ -->
-  <section class="slide" data-title="Architecture" data-time="0:40" data-script="Architecturally, everything is wired through a background service worker with five entrypoints. Content scripts handle the DOM detection and the floating badge. The background worker owns persistence and message routing — it's the single gateway to the IndexedDB store. Popup, dashboard, profile, and AI settings are independent pages over the same store, so there's one source of truth. The scoring engine itself is a pure, testable module, and the LLM runner sits behind the same interface — which means the AI is a plug-in, not a dependency.">
+  <section class="slide" data-title="Architecture" data-time="0:32" data-script="Architecturally, everything is wired through a background service worker. Content scripts handle DOM detection and the floating badge; the background worker owns persistence and message routing — it's the single gateway to the IndexedDB store. Popup, dashboard, profile, and settings are independent pages over the same store, so there's one source of truth. The scoring engine is pure and testable, and the LLM sits behind the same interface — AI is a plug-in, not a dependency.">
     <span class="kicker grad" data-anim style="--d:0">How · Architecture</span>
     <h2 data-anim style="--d:1">Five entrypoints, one gateway, one source of truth</h2>
     <div class="diagram" data-anim style="--d:2">
@@ -422,7 +422,7 @@
   </section>
 
   <!-- ============ 12 · Tech stack ============ -->
-  <section class="slide" data-title="Tech stack" data-time="0:35" data-script="The stack: WXT as the extension bundler — it gave me hot reload, auto-generated manifests, and Firefox builds for free. React 19 with strict TypeScript across every page, Tailwind CSS v4 for styling, and the tiny idb wrapper over IndexedDB. Deliberately, there's no state-management library — React state plus one persistence hook covered everything. Zero backend, zero telemetry, and AI requests go directly from the browser to the provider using your own key. The whole thing type-checks and lints clean, and production builds zip in one command.">
+  <section class="slide" data-title="Tech stack" data-time="0:25" data-script="The stack: WXT as the bundler — hot reload, auto-manifest, Firefox builds for free. React 19 with strict TypeScript, Tailwind v4, and a tiny wrapper over IndexedDB. Deliberately no state-management library — React state plus one persistence hook covered everything. Zero backend, zero telemetry; AI requests go directly from the browser using your own key.">
     <span class="kicker grad" data-anim style="--d:0">How · The Stack</span>
     <h2 data-anim style="--d:1">Modern stack, <span class="grad">zero backend</span></h2>
     <div class="grid6" data-anim style="--d:2">
@@ -437,20 +437,18 @@
   </section>
 
   <!-- ============ 13 · Insights ============ -->
-  <section class="slide" data-title="Insights & lessons learned" data-time="0:50" data-script="A few lessons from building this. One: the DOM is the hard part. Job sites redesign constantly, so detection has to be layered — multiple selector fallbacks, URL parsing, meta tags, canonical links — and defensive by default. Two: Shadow DOM is essential whenever you inject UI into pages you don't control. Three: graceful degradation beats failure — making the AI layer optional, with silent fallback, felt like a design win, not a compromise. Four: local-first is a feature in itself — no accounts, no servers, no privacy tradeoffs, and users notice. And five, maybe the most important: scoping to one clear workflow — clip, score, track — is what made the product coherent. Every feature that didn't serve that loop got cut.">
+  <section class="slide" data-title="Insights & lessons learned" data-time="0:24" data-script="Three lessons stand out. The DOM is the hard part — job sites redesign constantly, so detection must be layered and defensive. Shadow DOM is essential whenever you inject UI into pages you don't control. And local-first is a feature in itself: no accounts, no servers, no privacy tradeoffs — users can feel the difference.">
     <span class="kicker grad" data-anim style="--d:0">Part 4 · Insights</span>
     <h2 data-anim style="--d:1">Lessons learned</h2>
     <div class="lessons">
       <div class="lesson" data-anim style="--d:2"><span class="k">1</span><div><b>The DOM is the hard part</b><span>Job sites redesign constantly — detection must be layered (selector fallbacks, URLs, meta tags) and defensive by default.</span></div></div>
       <div class="lesson" data-anim style="--d:3"><span class="k">2</span><div><b>Shadow DOM is non-negotiable</b><span>When you inject UI into pages you don't control, style isolation is the difference between "works" and "works everywhere".</span></div></div>
-      <div class="lesson" data-anim style="--d:4"><span class="k">3</span><div><b>Graceful degradation beats failure</b><span>AI optional + silent heuristic fallback = the verdict never disappears. Design win, not compromise.</span></div></div>
-      <div class="lesson" data-anim style="--d:5"><span class="k">4</span><div><b>Local-first is a feature</b><span>No accounts, no servers, no privacy tradeoffs — users can feel the difference.</span></div></div>
-      <div class="lesson" data-anim style="--d:6"><span class="k">5</span><div><b>One clear workflow makes it coherent</b><span>Clip → Score → Track. Every feature that didn't serve that loop got cut.</span></div></div>
+      <div class="lesson" data-anim style="--d:4"><span class="k">3</span><div><b>Local-first is a feature</b><span>No accounts, no servers, no privacy tradeoffs — users can feel the difference.</span></div></div>
     </div>
   </section>
 
   <!-- ============ 14 · Closing ============ -->
-  <section class="slide" data-title="Thanks" data-time="0:20" data-script="So — JobLint is open source, MIT-licensed, and installs in two minutes. What's next: a Chrome Web Store release, automatic evaluation on clip, and shipped Firefox builds. If you've ever lost track of a job application, this one's for you. Thanks!">
+  <section class="slide" data-title="Thanks" data-time="0:17" data-script="JobLint is open source, MIT-licensed, and installs in two minutes. What's next: Chrome Web Store release, automatic evaluation on clip, and shipped Firefox builds. If you've ever lost track of a job application, this one's for you. Thanks!">
     <span class="kicker grad" data-anim style="--d:0">Open Source · MIT</span>
     <h1 data-anim style="--d:1">Stop applying blind.<br><span class="grad">Start tracking smart.</span></h1>
     <p class="lead" data-anim style="--d:2">What's next: Chrome Web Store release · auto-evaluation on clip · shipped Firefox builds.</p>
