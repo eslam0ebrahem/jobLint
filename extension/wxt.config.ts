@@ -17,12 +17,13 @@ export default defineConfig({
     browser_specific_settings: {
       gecko: {
         id: 'joblint@local',
+        data_collection_permissions: {
+          required: ['none'],
+        },
       },
     },
   },
-  // WXT warns about Firefox's reserved data-consent field until add-on stores
-  // accept it; JobLint collects no data and documents that boundary explicitly.
-  suppressWarnings: { firefoxDataCollection: true },
+  // JobLint stores job data locally and does not collect or transmit it.
   vite: () => ({
     plugins: [tailwindcss()],
   }),

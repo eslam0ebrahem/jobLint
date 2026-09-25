@@ -18,10 +18,11 @@ const INDEED_DESCRIPTION_SELECTORS = [
 export function detectIndeed(): DetectedJob | null {
   const structured = extractStructuredJob('indeed', getCanonicalUrl());
   const structuredComplete = Boolean(structured?.title && structured.company);
-  const root =
-    document.querySelector(
-      '#jobsearch-ViewjobPaneWrapper, .jobsearch-RightPane, #viewJobSSRRoot, [data-testid="jobsearch-ViewjobPaneWrapper"]',
-    ) || document;
+  const detailRoot = document.querySelector(
+    '#jobsearch-ViewjobPaneWrapper, .jobsearch-RightPane, #viewJobSSRRoot, [data-testid="jobsearch-ViewjobPaneWrapper"]',
+  );
+  if (!structuredComplete && !detailRoot && !location.pathname.includes('/viewjob')) return null;
+  const root = detailRoot || document;
   const params = new URLSearchParams(location.search);
   const jobId =
     params.get('vjk') ||
@@ -47,7 +48,7 @@ export function detectIndeed(): DetectedJob | null {
   const company =
     structured?.company ||
     getText(
-      '[data-testid="inlineHeader-companyName"], [data-testid="company-name"]',
+      '[data-testid="inlineHeader-companyName"], [data-testid="company-name"], .companyName',
       root,
     ) ||
     meta?.[0]?.trim() ||
@@ -66,7 +67,7 @@ export function detectIndeed(): DetectedJob | null {
     location:
       structured?.location ||
       getText(
-        '[data-testid="inlineHeader-companyLocation"], [data-testid="text-location"]',
+        '[data-testid="inlineHeader-companyLocation"], [data-testid="text-location"], .companyLocation',
         root,
       ) ||
       meta?.at(-1)?.trim() ||

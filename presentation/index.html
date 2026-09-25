@@ -422,13 +422,13 @@
   </section>
 
   <!-- ============ 12 · Tech stack ============ -->
-  <section class="slide" data-title="Tech stack" data-time="0:25" data-script="The stack: WXT as the bundler — hot reload, generated host permissions, and Chrome/Firefox builds. React 19 with typed strict TypeScript, Tailwind v4, and a small promise wrapper over IndexedDB. Deliberately no state-management library — focused gateway-backed hooks own job collections and event timelines. Vitest, jsdom, and fake IndexedDB run 55 tests; the production gateway smoke harness runs 37 actions with zero network calls. Zero backend, zero telemetry; optional AI requests go directly from the browser using your own key.">
+  <section class="slide" data-title="Tech stack" data-time="0:25" data-script="The stack: WXT as the bundler — hot reload, generated host permissions, and Chrome/Firefox builds. React 19 with typed strict TypeScript, Tailwind v4, and a small promise wrapper over IndexedDB. Deliberately no state-management library — focused gateway-backed hooks own job collections and event timelines. Vitest, jsdom, and fake IndexedDB run 65 tests; a Playwright extension flow covers discovery through dashboard tracking, and the production gateway smoke harness runs 37 actions with zero network calls. Zero backend, zero telemetry; optional AI requests go directly from the browser using your own key.">
     <span class="kicker grad" data-anim style="--d:0">How · The Stack</span>
     <h2 data-anim style="--d:1">Modern stack, <span class="grad">zero backend</span></h2>
     <div class="grid6" data-anim style="--d:2">
       <div class="tech"><div class="tt">⚡ WXT <small class="note">0.21</small></div><div class="td">Extension bundler: hot reload, auto-manifest, Firefox builds</div></div>
       <div class="tech"><div class="tt">⚛️ React <small class="note">19</small></div><div class="td">Four React surfaces over the gateway; no state library</div></div>
-      <div class="tech"><div class="tt">🛡️ TypeScript <small class="note">5.9</small></div><div class="td">Typed gateway; compile, lint, and 55 tests across 15 suites</div></div>
+      <div class="tech"><div class="tt">🛡️ TypeScript <small class="note">5.9</small></div><div class="td">Typed gateway; compile, lint, and 65 tests across 16 suites</div></div>
       <div class="tech"><div class="tt">🎨 Tailwind <small class="note">v4</small></div><div class="td">CSS-first config via Vite plugin, shared styles</div></div>
       <div class="tech"><div class="tt">🗄️ idb + IndexedDB</div><div class="td">Promise wrapper; v8 jobs/events/discovery/follow-up stores with identity deduplication</div></div>
       <div class="tech"><div class="tt">🔌 OpenAI-compatible API</div><div class="td">OpenRouter · OpenAI · Groq · MiniMax · Ollama — direct, own key</div></div>

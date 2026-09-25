@@ -59,13 +59,20 @@ Production builds:
 ```bash
 npm run compile       # tsc --noEmit
 npm run lint
-npm test              # 55 Vitest domain, application, persistence, detector, gateway, backup, packet, reminder, and analytics tests
+npm test              # 65 Vitest domain, application, persistence, detector, gateway, backup, packet, reminder, and analytics tests
+npm run verify:fixtures # fail when detector fixture classifications drift
+npm run inspect:fixtures # local visual report for LinkedIn/Indeed browser fixtures
+npm run test:e2e      # Playwright discovery → clip → dashboard flow
+npm run test:e2e:firefox # Firefox MV2 artifact contract + web-ext lint
+npm run test:visual   # inspector accessibility snapshots
 npm run smoke:gateway  # production bundle + offline 37-action gateway harness
 npm run build         # .output/chrome-mv3
 npm run build:firefox # .output/firefox-mv2
 ```
 
 Load `.output/chrome-mv3` from `chrome://extensions` with Developer mode enabled. Firefox artifacts are written under `.output/firefox-mv2` and can be loaded through Firefox’s temporary add-on workflow. The production smoke harness is the supported automated runtime substitute when a branded browser blocks `--load-extension`; it exercises the real background bundle with fake IndexedDB and zero network calls.
+
+`npm run inspect:fixtures` starts a local-only visual inspector for the sanitized LinkedIn and Indeed browser fixtures. It runs the real detector and discovery modules against every fixture, writes the generated report under `.output/fixture-inspector/`, and serves the comparison UI locally through Vite without sending fixture data to an external service. Fixture capture and sanitization guidance is in [`extension/tests/fixtures/README.md`](extension/tests/fixtures/README.md).
 
 ## Optional AI setup
 
@@ -108,7 +115,7 @@ Dependencies point inward: entrypoints call the typed gateway; the background en
 - `extension/src/infrastructure/` — IndexedDB v8, browser storage, detector health, alarms/notifications, and AI HTTP adapters.
 - `extension/src/lib/evaluation/` — deterministic evaluator, normalization, and role/skill/scoring rules only.
 - `extension/src/lib/detectors/` — platform registry, structured data, detail detectors, and user-invoked search-card scanners.
-- `extension/tests/` — 55 tests in 15 suites covering domain policies, application workflows, persistence migrations, detectors, packets, reminders, analytics, and integration boundaries.
+- `extension/tests/` — 65 tests in 16 suites covering domain policies, application workflows, persistence migrations, positive and blocked detector browser fixtures, packets, reminders, analytics, and integration boundaries.
 
 ## Data portability
 

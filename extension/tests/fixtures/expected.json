@@ -1,0 +1,12 @@
+{
+  "indeed-legacy-detail.html": "detail",
+  "indeed-missing-company.html": "none",
+  "indeed-organic-search.html": "discovery",
+  "indeed-sign-in-wall.html": "none",
+  "indeed-ssr-detail.html": "detail",
+  "linkedin-consent-wall.html": "none",
+  "linkedin-expired-job.html": "none",
+  "linkedin-guest-search.html": "discovery",
+  "linkedin-legacy-split-pane.html": "detail",
+  "linkedin-unified-detail.html": "detail"
+}

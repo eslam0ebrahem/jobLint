@@ -73,7 +73,11 @@ export function detectLinkedIn(): DetectedJob | null {
   }
 
   if (!jobId) {
-    const activeViewLink = root.querySelector<HTMLAnchorElement>('a[href*="/jobs/view/"]');
+    const activeViewLink = detailPane
+      ? detailPane.querySelector<HTMLAnchorElement>('a[href*="/jobs/view/"]')
+      : document.querySelector<HTMLAnchorElement>(
+        '.jobs-search-results-list__list-item--active a[href*="/jobs/view/"], .job-card-container--active a[href*="/jobs/view/"], [data-view-name="job-details"] a[href*="/jobs/view/"]',
+      );
     const match = activeViewLink?.href.match(/\/jobs\/view\/(?:[^\s/?#]+-)?(\d+)/);
     if (match?.[1]) jobId = match[1];
   }

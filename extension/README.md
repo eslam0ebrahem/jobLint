@@ -23,9 +23,17 @@ npm test
 npm run dev
 npm run build
 npm run build:firefox
+npm run inspect:fixtures
+npm run test:e2e
+npm run test:e2e:firefox
+npm run test:visual
 ```
 
-`npm test` uses Vitest with jsdom and fake IndexedDB. The 55-test suite covers identity, job/fact normalization, discovery, local evaluation, packets, reminders, outcome analytics/calibration safeguards, AI fallback, IndexedDB migrations, backup parsing, settings, detector fixtures, and the typed gateway contract. `npm run smoke:gateway` builds the production background bundle and runs a zero-network 37-action harness.
+`npm test` uses Vitest with jsdom and fake IndexedDB. The 65-test suite covers identity, job/fact normalization, discovery, local evaluation, packets, reminders, outcome analytics/calibration safeguards, AI fallback, IndexedDB migrations, backup parsing, settings, positive and blocked LinkedIn/Indeed browser fixtures, and the typed gateway contract. `npm run smoke:gateway` builds the production background bundle and runs a zero-network 37-action harness.
+
+`npm run inspect:fixtures` executes the real detector modules against every sanitized browser fixture, writes a generated report to `.output/fixture-inspector/`, and starts the local Vite comparison UI. The inspector is a development tool and is not included in extension production builds. The capture and sanitization checklist lives in [`tests/fixtures/README.md`](tests/fixtures/README.md).
+
+`npm run test:e2e` builds the Chrome artifact and runs a Playwright extension flow for discovery scanning, saving a discovered card, clipping a detail posting, and verifying the dashboard Kanban. `npm run test:e2e:firefox` checks the Firefox MV2 manifest contract and runs `web-ext lint`; Playwright does not load Firefox add-ons directly. `npm run test:visual` checks stable accessibility snapshots for detail, discovery, and blocked inspector states.
 
 ## Source map
 
@@ -52,7 +60,9 @@ src/
   lib/gateway.ts      typed client transport and event subscription
   lib/detectors/      shared registry, JSON-LD, platform DOM, and card scanners
   lib/evaluation/     deterministic evaluator and pure scoring rules
-tests/                 15 Vitest suites / 55 tests
+tests/                 16 Vitest suites / 65 tests
+  e2e/                  Playwright extension and artifact flows
+  fixture-inspector/    local Vite UI for fixture source and extracted fields
 wxt.config.ts          manifest permissions generated from the registry
 ```
 

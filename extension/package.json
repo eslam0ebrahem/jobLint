@@ -15,6 +15,11 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "vitest run",
+    "test:e2e": "npm run build && playwright test tests/e2e/discovery-flow.spec.ts",
+    "test:e2e:firefox": "npm run build:firefox && playwright test --config playwright.firefox.config.ts && web-ext lint --source-dir .output/firefox-mv2 --no-input",
+    "test:visual": "playwright test --config playwright.visual.config.ts",
+    "verify:fixtures": "node scripts/generate-fixture-inspector.mjs --check",
+    "inspect:fixtures": "node scripts/generate-fixture-inspector.mjs && vite --config tests/fixture-inspector/vite.config.ts",
     "smoke:gateway": "npm run build && node scripts/gateway-smoke.mjs",
     "test:watch": "vitest",
     "postinstall": "wxt prepare"
@@ -25,6 +30,7 @@
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

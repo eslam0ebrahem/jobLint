@@ -1,0 +1,6 @@
+- heading "Detail posting" [level=3]
+- paragraph: Indeed
+- heading "Data Engineer" [level=4]
+- paragraph: Northwind Analytics
+- text: /Job ID legacy-\d+ Location Manchester Salary £\d+,\d+ – £\d+,\d+ per year Detection indeed-layered-dom State detected Confidence \d+\.\d+ Job URL https:\/\/www\.indeed\.co\.uk\/viewjob\?jk=legacy-\d+ Apply URL https:\/\/www\.indeed\.co\.uk\/apply\/apply\?jk=legacy-\d+ Description/
+- paragraph: Build dependable batch and streaming pipelines for a growing data platform. Work with analysts and engineers to improve quality, observability, and governance.

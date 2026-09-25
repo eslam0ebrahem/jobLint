@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>JobLint Fixture Inspector</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar" aria-label="Fixture navigation">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">JL</span>
+          <div>
+            <p class="eyebrow">Development tool</p>
+            <h1>Fixture Inspector</h1>
+          </div>
+        </div>
+
+        <div id="summary" class="summary" aria-live="polite"></div>
+
+        <label class="search-box">
+          <span class="sr-only">Filter fixtures</span>
+          <input id="filter" type="search" placeholder="Filter platform, state, or file…" autocomplete="off" />
+        </label>
+
+        <nav id="fixture-list" class="fixture-list" aria-label="Browser fixtures"></nav>
+
+        <p class="sidebar-note">
+          Runs the real detector and discovery modules locally against sanitized HTML. No fixture data leaves this page.
+        </p>
+      </aside>
+
+      <main class="workspace">
+        <header class="toolbar">
+          <div>
+            <p id="platform" class="eyebrow"></p>
+            <h2 id="fixture-name">Loading fixture report…</h2>
+            <a id="fixture-url" class="fixture-url" target="_blank" rel="noreferrer"></a>
+          </div>
+          <div class="toolbar-actions">
+            <span id="status" class="status-badge"></span>
+            <button id="reload" class="secondary-button" type="button">Refresh report</button>
+          </div>
+        </header>
+
+        <section class="content-grid">
+          <article class="panel preview-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Sanitized source</p>
+                <h3>Browser preview</h3>
+              </div>
+              <span class="panel-note">srcdoc · scripts disabled</span>
+            </div>
+            <iframe id="fixture-frame" title="Selected fixture preview" sandbox></iframe>
+          </article>
+
+          <article class="panel extraction-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Actual module output</p>
+                <h3>Extracted fields</h3>
+              </div>
+              <span id="generated-at" class="panel-note"></span>
+            </div>
+            <div id="extraction" class="extraction" aria-live="polite"></div>
+          </article>
+        </section>
+
+        <details class="source-panel">
+          <summary>View fixture source</summary>
+          <pre id="fixture-source"></pre>
+        </details>
+      </main>
+    </div>
+
+    <script type="module" src="./inspector.js"></script>
+  </body>
+</html>

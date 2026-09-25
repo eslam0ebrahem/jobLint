@@ -1,0 +1,3 @@
+- text: ✓
+- heading "No job emitted" [level=3]
+- paragraph: The detector correctly rejected this consent, authentication, expired, or incomplete state.

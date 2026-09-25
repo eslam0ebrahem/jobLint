@@ -1,0 +1,11 @@
+- heading "Discovery cards (2)" [level=3]
+- heading "Card 1" [level=3]
+- paragraph: LinkedIn
+- heading "Staff Product Designer" [level=4]
+- paragraph: Mosaic Studio
+- text: /Job ID \d+ Location Remote · Europe Salary €\d+,\d+–€\d+,\d+ Detection linkedin-search-card State partial Confidence \d+\.\d+ Job URL https:\/\/www\.linkedin\.com\/jobs\/view\/Staff-Product-Designer-\d+\?trk=public_jobs_jserp-result_search-card Apply URL https:\/\/www\.linkedin\.com\/jobs\/view\/Staff-Product-Designer-\d+\?trk=public_jobs_jserp-result_search-card/
+- heading "Card 2" [level=3]
+- paragraph: LinkedIn
+- heading "Senior Data Analyst" [level=4]
+- paragraph: Signal & Co
+- text: /Job ID \d+ Location Dublin, Ireland Detection linkedin-search-card State partial Confidence \d+\.\d+ Job URL https:\/\/www\.linkedin\.com\/jobs\/view\/Senior-Data-Analyst-\d+ Apply URL https:\/\/www\.linkedin\.com\/jobs\/view\/Senior-Data-Analyst-\d+/
