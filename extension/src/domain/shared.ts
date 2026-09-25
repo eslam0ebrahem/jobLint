@@ -16,6 +16,10 @@ export const EVENT_TYPES = [
   'evaluation_completed',
   're_evaluated',
   'outcome_recorded',
+  'follow_up_created',
+  'follow_up_updated',
+  'follow_up_completed',
+  'follow_up_deleted',
   'imported',
 ] as const satisfies readonly ApplicationEvent['type'][];
 

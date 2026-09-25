@@ -12,6 +12,11 @@ import type {
   Profile,
   UserPreferences,
 } from '@/src/types/job';
+import type { ExtensionDiagnostics } from '@/src/domain/diagnostics';
+import type { DiscoveryInboxSnapshot, DiscoveryRecord, DiscoverySaveResult } from '@/src/types/discovery';
+import type { FollowUp, FollowUpKind, FollowUpStatus } from '@/src/types/job';
+import type { ApplicationPacket } from '@/src/types/packet';
+import type { OutcomeAnalytics } from '@/src/types/analytics';
 import type {
   BackupConflictStrategy,
   BackupImportResult,
@@ -41,6 +46,19 @@ export type GatewayRequest =
   | { action: 'get-events'; jobId?: string }
   | { action: 'get-insights' }
   | { action: 'get-detector-health' }
+  | { action: 'get-extension-diagnostics' }
+  | { action: 'scan-discovery-jobs' }
+  | { action: 'list-discovery' }
+  | { action: 'save-discovery'; id: string }
+  | { action: 'dismiss-discovery'; id: string }
+  | { action: 'revisit-discovery'; id: string }
+  | { action: 'list-follow-ups'; jobId?: string }
+  | { action: 'create-follow-up'; jobId: string; title: string; dueAt: string; kind?: FollowUpKind; notes?: string; reminderAt?: string }
+  | { action: 'update-follow-up'; id: string; title?: string; dueAt?: string; kind?: FollowUpKind; notes?: string; status?: FollowUpStatus; reminderAt?: string }
+  | { action: 'complete-follow-up'; id: string }
+  | { action: 'delete-follow-up'; id: string }
+  | { action: 'get-application-packet'; id: string }
+  | { action: 'get-outcome-analytics' }
   | { action: 'get-profile' }
   | { action: 'save-profile'; profile: Profile }
   | { action: 'clear-profile' }
@@ -60,7 +78,9 @@ export type GatewayEvent =
   | { type: 'job-updated'; job: Job }
   | { type: 'profile-changed' }
   | { type: 'preferences-changed' }
-  | { type: 'ai-config-changed' };
+  | { type: 'ai-config-changed' }
+  | { type: 'discovery-changed'; reason: string }
+  | { type: 'follow-ups-changed'; reason: string };
 
 export type GatewayResponse<T = unknown> =
   | { ok: true; data: T }
@@ -83,6 +103,19 @@ export type GatewayData = {
   'get-events': ApplicationEvent[];
   'get-insights': JobInsightSummary;
   'get-detector-health': DetectorHealth[];
+  'get-extension-diagnostics': ExtensionDiagnostics;
+  'scan-discovery-jobs': DiscoveryInboxSnapshot;
+  'list-discovery': DiscoveryInboxSnapshot;
+  'save-discovery': DiscoverySaveResult;
+  'dismiss-discovery': DiscoveryRecord;
+  'revisit-discovery': true;
+  'list-follow-ups': FollowUp[];
+  'create-follow-up': FollowUp;
+  'update-follow-up': FollowUp;
+  'complete-follow-up': FollowUp;
+  'delete-follow-up': true;
+  'get-application-packet': ApplicationPacket;
+  'get-outcome-analytics': OutcomeAnalytics;
   'get-profile': Profile;
   'save-profile': Profile;
   'clear-profile': true;
@@ -116,6 +149,10 @@ export function isGatewayRequest(value: unknown): value is GatewayRequest {
     case 'list-jobs':
     case 'get-insights':
     case 'get-detector-health':
+    case 'get-extension-diagnostics':
+    case 'scan-discovery-jobs':
+    case 'list-discovery':
+    case 'get-outcome-analytics':
     case 'get-profile':
     case 'clear-profile':
     case 'get-preferences':
@@ -128,6 +165,13 @@ export function isGatewayRequest(value: unknown): value is GatewayRequest {
     case 'move-job':
     case 'update-notes':
     case 'delete-job':
+    case 'complete-follow-up':
+    case 'delete-follow-up':
+    case 'get-application-packet':
+    case 'get-outcome-analytics':
+    case 'save-discovery':
+    case 'dismiss-discovery':
+    case 'revisit-discovery':
       return hasId;
     case 'clip-job':
     case 'save-job':
@@ -139,6 +183,12 @@ export function isGatewayRequest(value: unknown): value is GatewayRequest {
       return hasId || isJob(value.job);
     case 'get-events':
       return value.jobId === undefined || typeof value.jobId === 'string';
+    case 'list-follow-ups':
+      return value.jobId === undefined || typeof value.jobId === 'string';
+    case 'create-follow-up':
+      return typeof value.jobId === 'string' && typeof value.title === 'string' && typeof value.dueAt === 'string';
+    case 'update-follow-up':
+      return hasId;
     case 'save-profile':
       return isRecord(value.profile);
     case 'save-preferences':

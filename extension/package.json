@@ -15,6 +15,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "vitest run",
+    "smoke:gateway": "npm run build && node scripts/gateway-smoke.mjs",
     "test:watch": "vitest",
     "postinstall": "wxt prepare"
   },

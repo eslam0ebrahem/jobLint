@@ -8,6 +8,7 @@ import type {
 import { COLUMNS } from '@/src/types/job';
 import { normalizeEvaluation } from '@/src/lib/evaluation/normalize';
 import { createJobIdentity, sanitizeExternalUrl } from './identity';
+import { normalizeJobFacts } from './job-facts';
 import { isApplicationOutcome, isColumn, isJobSource } from './shared';
 
 export interface NormalizeJobOptions {
@@ -40,6 +41,7 @@ export function normalizeJob(input: NewJob | Job, options: NormalizeJobOptions):
     updatedAt: preserveTimestamps ? ('updatedAt' in input ? input.updatedAt : undefined) || timestamp : timestamp,
   } as Job;
   if (merged.evaluation) merged.evaluation = normalizeEvaluation(merged.evaluation) || undefined;
+  merged.facts = normalizeJobFacts(existing?.facts || input.facts, merged, preserveTimestamps ? existing?.facts?.extractedAt || timestamp : timestamp);
   merged.jobUrl = sanitizeExternalUrl(merged.jobUrl);
   merged.applyUrl = sanitizeExternalUrl(merged.applyUrl);
   if (!isColumn(merged.column)) merged.column = 'to_apply';

@@ -5,7 +5,7 @@ import { Footer } from '@/src/components/Footer';
 import { EvaluationCard } from '@/src/components/EvaluationCard';
 import { useJobs } from '@/src/hooks/useJobs';
 import { sendGatewayRequest } from '@/src/lib/gateway';
-import { getProfileMissingNotice } from '@/src/lib/evaluation';
+import { getProfileMissingNotice } from '@/src/domain/settings';
 import type { DetectedJob, Job, JobEvaluation } from '@/src/types/job';
 
 type ManualDraft = {
@@ -26,6 +26,7 @@ export default function App() {
   const [evaluatingJob, setEvaluatingJob] = useState<(DetectedJob & { evaluation: JobEvaluation }) | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [isAiEvaluating, setIsAiEvaluating] = useState(false);
+  const [isScanningDiscovery, setIsScanningDiscovery] = useState(false);
   const [evaluatingCardId, setEvaluatingCardId] = useState<string | null>(null);
   const [aiEvaluatingCardId, setAiEvaluatingCardId] = useState<string | null>(null);
   const [showManual, setShowManual] = useState(false);
@@ -111,6 +112,25 @@ export default function App() {
       setFeedback(`${result.isNew ? 'Clipped' : 'Already saved; refreshed'}${enhancement}: ${job.title}`);
     } catch (reason) {
       showError(reason instanceof Error ? reason.message : 'Could not clip this job.');
+    }
+  };
+
+  const handleScanDiscovery = async () => {
+    setFeedback(null);
+    setError(null);
+    setIsScanningDiscovery(true);
+    try {
+      const result = await sendGatewayRequest({ action: 'scan-discovery-jobs' });
+      if (!result.detectedCount) {
+        setFeedback('No complete job cards were found on this page. Try a results list or refresh the page.');
+        return;
+      }
+      setFeedback(`Discovery scan found ${result.detectedCount} jobs: ${result.addedCount} new, ${result.refreshedCount} refreshed. Opening the inbox…`);
+      await browser.tabs.create({ url: browser.runtime.getURL('/dashboard.html#discovery') });
+    } catch (reason) {
+      showError(reason instanceof Error ? reason.message : 'Could not scan this page for jobs.');
+    } finally {
+      setIsScanningDiscovery(false);
     }
   };
 
@@ -212,6 +232,7 @@ export default function App() {
             aiEvaluatingId={aiEvaluatingCardId}
           />
           <Footer onClip={handleClip} onEvaluate={() => evaluateActiveJob(false)} onEvaluateAi={() => evaluateActiveJob(true)} evaluating={isEvaluating} evaluatingAi={isAiEvaluating} />
+          <button type="button" onClick={() => void handleScanDiscovery()} disabled={isScanningDiscovery} className="mt-2 w-full cursor-pointer rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50">{isScanningDiscovery ? 'Scanning visible job cards…' : 'Scan this LinkedIn / Indeed search page'}</button>
           <button type="button" onClick={() => setShowManual(true)} className="mt-2 cursor-pointer text-center text-[11px] font-semibold text-slate-500 hover:text-indigo-700">Couldn’t detect this job? Add it manually</button>
         </>
       )}

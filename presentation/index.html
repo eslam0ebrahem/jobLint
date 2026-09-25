@@ -292,7 +292,7 @@
   </section>
 
   <!-- ============ 6 · JobLint at a glance ============ -->
-  <section class="slide" data-title="JobLint at a glance" data-time="0:29" data-script="So here's JobLint: a WXT browser extension that lives on LinkedIn and Indeed. It detects the job you're viewing, clips it with one click, evaluates fit against your profile with a deterministic local engine, and drops it into a six-stage Kanban board. AI review is available when you explicitly configure it. Jobs and events stay in IndexedDB; profile and preferences stay in local extension storage. No accounts, servers, or analytics.">
+  <section class="slide" data-title="JobLint at a glance" data-time="0:29" data-script="So here's JobLint: a WXT browser extension that lives on LinkedIn and Indeed. It detects the job you're viewing, clips it with one click, evaluates fit against your profile with a deterministic local engine, and drops it into a six-stage Kanban board. A user-triggered search scan fills a local discovery inbox, and the details drawer can build an evidence-grounded application packet. AI review is available when you explicitly configure it. Jobs, discovery cards, follow-ups, and events stay in IndexedDB; profile and preferences stay in local extension storage. No accounts, servers, or analytics.">
     <span class="kicker grad" data-anim style="--d:0">JobLint at a Glance</span>
     <h2 data-anim style="--d:1">Detect → Clip → Score → Track</h2>
     <div class="steps">
@@ -302,7 +302,7 @@
       <span class="arrow">→</span>
       <div class="step" data-anim style="--d:4"><span class="n">3</span><h3>📊 Track the pipeline</h3><p>Six stages with drag-and-drop, filters, insights, notes, events, and export.</p></div>
     </div>
-    <p class="lead" data-anim style="--d:5; margin-top:28px">Local by default — jobs and events in IndexedDB, settings in local extension storage, no accounts or analytics.</p>
+    <p class="lead" data-anim style="--d:5; margin-top:28px">Local by default — jobs, discovery, facts, follow-ups, and events in IndexedDB, settings in local extension storage, no accounts or analytics.</p>
   </section>
 
   <!-- ============ 7 · Demo 1: floating badge ============ -->
@@ -363,7 +363,7 @@
   </section>
 
   <!-- ============ 9 · Demo 3: Kanban ============ -->
-  <section class="slide" data-title="Demo · The pipeline board" data-time="0:23" data-script="Everything lands here: a six-stage board — To Apply, Applied, Assessment, Interviewing, Offer, Rejected — with native drag-and-drop, filters, insights, outcomes, and a details drawer with evidence, notes, and event history. Your data comes back out as safe CSV, or a full JSON backup with a conflict-aware restore preview.">
+  <section class="slide" data-title="Demo · The pipeline board" data-time="0:23" data-script="Everything lands here: a six-stage board — To Apply, Applied, Assessment, Interviewing, Offer, Rejected — with native drag-and-drop, filters, insights, outcomes, follow-ups, normalized facts, an evidence-grounded local packet, and a details drawer with evidence, notes, and event history. Outcome analytics refuse calibration claims below a 20-outcome minimum. Your data comes back out as safe CSV, or a full JSON backup with a conflict-aware restore preview.">
     <span class="kicker grad" data-anim style="--d:0">Demo 3 · The Pipeline</span>
     <h2 data-anim style="--d:1">A six-stage pipeline board</h2>
     <div class="kboard" data-anim style="--d:2">
@@ -398,7 +398,7 @@
   </section>
 
   <!-- ============ 11 · Architecture ============ -->
-  <section class="slide" data-title="Architecture" data-time="0:32" data-script="Architecturally, every UI action crosses one typed gateway into a background composition root. The background no longer owns business rules: it constructs application services for jobs, backups, settings, and AI review. Those services depend on injected ports. Pure domain modules hold identity, scoring, insights, and backup policies; infrastructure adapters own IndexedDB v6, local extension storage, detector-platform access, and optional AI HTTP. That direction keeps the evaluator deterministic and the network boundary replaceable.">
+  <section class="slide" data-title="Architecture" data-time="0:32" data-script="Architecturally, every UI action crosses one typed gateway into a background composition root. The background no longer owns business rules: it constructs application services for jobs, discovery, packets, follow-ups, reminders, analytics, backups, settings, and AI review. Those services depend on injected ports. Pure domain modules hold identity, facts, scoring, packet, calibration, and backup policies; infrastructure adapters own IndexedDB v8, local extension storage, alarms/notifications, detector-platform access, and optional AI HTTP. That direction keeps the evaluator deterministic and the network boundary replaceable.">
     <span class="kicker grad" data-anim style="--d:0">How · Architecture</span>
     <h2 data-anim style="--d:1">One gateway, layered use cases, explicit adapters</h2>
     <div class="diagram" data-anim style="--d:2">
@@ -413,24 +413,24 @@
       <div class="drow">
         <div class="dbox hero"><div class="t">🧩 Application services</div><div class="d">Job · backup · settings · AI review workflows</div></div>
         <span class="darrow">⇄</span>
-        <div class="dbox"><div class="t">📐 Pure domain</div><div class="d">Identity · evaluator · insights · backup · policy</div></div>
+        <div class="dbox"><div class="t">📐 Pure domain</div><div class="d">Identity · facts · evaluator · packets · calibration · backup</div></div>
         <span class="darrow">⇄</span>
-        <div class="dbox"><div class="t">🔌 Infrastructure adapters</div><div class="d">IndexedDB v6 · storage.local · detectors · AI HTTP</div></div>
+        <div class="dbox"><div class="t">🔌 Infrastructure adapters</div><div class="d">IndexedDB v8 · storage.local · alarms · detectors · AI HTTP</div></div>
       </div>
     </div>
     <p class="lead" data-anim style="--d:3; margin-top:20px">Dependencies point inward: <b>pure policies</b> at the core, replaceable <b>adapters</b> at the edge, and AI remains a <b>plug-in</b>.</p>
   </section>
 
   <!-- ============ 12 · Tech stack ============ -->
-  <section class="slide" data-title="Tech stack" data-time="0:25" data-script="The stack: WXT as the bundler — hot reload, generated host permissions, and Chrome/Firefox builds. React 19 with typed strict TypeScript, Tailwind v4, and a small promise wrapper over IndexedDB. Deliberately no state-management library — focused gateway-backed hooks own job collections and event timelines. Zero backend, zero telemetry; optional AI requests go directly from the browser using your own key.">
+  <section class="slide" data-title="Tech stack" data-time="0:25" data-script="The stack: WXT as the bundler — hot reload, generated host permissions, and Chrome/Firefox builds. React 19 with typed strict TypeScript, Tailwind v4, and a small promise wrapper over IndexedDB. Deliberately no state-management library — focused gateway-backed hooks own job collections and event timelines. Vitest, jsdom, and fake IndexedDB run 55 tests; the production gateway smoke harness runs 37 actions with zero network calls. Zero backend, zero telemetry; optional AI requests go directly from the browser using your own key.">
     <span class="kicker grad" data-anim style="--d:0">How · The Stack</span>
     <h2 data-anim style="--d:1">Modern stack, <span class="grad">zero backend</span></h2>
     <div class="grid6" data-anim style="--d:2">
       <div class="tech"><div class="tt">⚡ WXT <small class="note">0.21</small></div><div class="td">Extension bundler: hot reload, auto-manifest, Firefox builds</div></div>
       <div class="tech"><div class="tt">⚛️ React <small class="note">19</small></div><div class="td">Four React surfaces over the gateway; no state library</div></div>
-      <div class="tech"><div class="tt">🛡️ TypeScript <small class="note">5.9</small></div><div class="td">Typed gateway; compile, lint, and 33 tests across 9 suites</div></div>
+      <div class="tech"><div class="tt">🛡️ TypeScript <small class="note">5.9</small></div><div class="td">Typed gateway; compile, lint, and 55 tests across 15 suites</div></div>
       <div class="tech"><div class="tt">🎨 Tailwind <small class="note">v4</small></div><div class="td">CSS-first config via Vite plugin, shared styles</div></div>
-      <div class="tech"><div class="tt">🗄️ idb + IndexedDB</div><div class="td">Promise wrapper; versioned jobs/events stores with identity deduplication</div></div>
+      <div class="tech"><div class="tt">🗄️ idb + IndexedDB</div><div class="td">Promise wrapper; v8 jobs/events/discovery/follow-up stores with identity deduplication</div></div>
       <div class="tech"><div class="tt">🔌 OpenAI-compatible API</div><div class="td">OpenRouter · OpenAI · Groq · MiniMax · Ollama — direct, own key</div></div>
     </div>
     <p class="lead" data-anim style="--d:3; margin-top:22px">Chrome Manifest V3 / Firefox MV2 · permissions: activeTab, storage, tabs, scripting · zero remote calls besides your AI provider.</p>

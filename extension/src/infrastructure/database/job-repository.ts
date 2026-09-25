@@ -1,4 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase, type IDBPTransaction } from 'idb';
+import type { DiscoveryRecord } from '@/src/types/discovery';
+import type { FollowUp } from '@/src/types/job';
 import type {
   ApplicationEvent,
   ApplicationOutcome,
@@ -12,9 +14,9 @@ import { isApplicationOutcome, isColumn } from '@/src/domain/shared';
 import { normalizeEvaluation } from '@/src/lib/evaluation/normalize';
 
 export const DB_NAME = 'joblint-db';
-export const DB_VERSION = 6;
+export const DB_VERSION = 8;
 
-interface JobLintDB extends DBSchema {
+export interface JobLintDB extends DBSchema {
   jobs: {
     key: string;
     value: Job;
@@ -29,6 +31,25 @@ interface JobLintDB extends DBSchema {
     indexes: {
       'by-job': string;
       'by-time': string;
+    };
+  };
+  discovery: {
+    key: string;
+    value: DiscoveryRecord;
+    indexes: {
+      'by-identity': string;
+      'by-source': string;
+      'by-status': string;
+      'by-updated': string;
+    };
+  };
+  followUps: {
+    key: string;
+    value: FollowUp;
+    indexes: {
+      'by-job': string;
+      'by-due': string;
+      'by-status': string;
     };
   };
 }
@@ -104,7 +125,7 @@ function addEvent(
   return tx.objectStore('events').put(record).then(() => record);
 }
 
-function getDb(): Promise<IDBPDatabase<JobLintDB>> {
+export function getDb(): Promise<IDBPDatabase<JobLintDB>> {
   if (!dbPromise) {
     dbPromise = openDB<JobLintDB>(DB_NAME, DB_VERSION, {
       upgrade(db, oldVersion, _newVersion, transaction) {
@@ -121,6 +142,30 @@ function getDb(): Promise<IDBPDatabase<JobLintDB>> {
           const store = db.createObjectStore('events', { keyPath: 'id' });
           store.createIndex('by-job', 'jobId');
           store.createIndex('by-time', 'at');
+        }
+        if (!db.objectStoreNames.contains('discovery')) {
+          const store = db.createObjectStore('discovery', { keyPath: 'id' });
+          store.createIndex('by-identity', 'identity.key');
+          store.createIndex('by-source', 'job.source');
+          store.createIndex('by-status', 'status');
+          store.createIndex('by-updated', 'updatedAt');
+        } else {
+          const store = transaction.objectStore('discovery');
+          if (!Array.from(store.indexNames).includes('by-identity')) store.createIndex('by-identity', 'identity.key');
+          if (!Array.from(store.indexNames).includes('by-source')) store.createIndex('by-source', 'job.source');
+          if (!Array.from(store.indexNames).includes('by-status')) store.createIndex('by-status', 'status');
+          if (!Array.from(store.indexNames).includes('by-updated')) store.createIndex('by-updated', 'updatedAt');
+        }
+        if (!db.objectStoreNames.contains('followUps')) {
+          const store = db.createObjectStore('followUps', { keyPath: 'id' });
+          store.createIndex('by-job', 'jobId');
+          store.createIndex('by-due', 'dueAt');
+          store.createIndex('by-status', 'status');
+        } else {
+          const store = transaction.objectStore('followUps');
+          if (!Array.from(store.indexNames).includes('by-job')) store.createIndex('by-job', 'jobId');
+          if (!Array.from(store.indexNames).includes('by-due')) store.createIndex('by-due', 'dueAt');
+          if (!Array.from(store.indexNames).includes('by-status')) store.createIndex('by-status', 'status');
         }
 
         // v1-v5 records were not actively repaired. Do that now, while the
@@ -241,7 +286,13 @@ export async function recordOutcome(id: string, outcome: ApplicationOutcome): Pr
   const db = await getDb();
   const job = await db.get('jobs', id);
   if (!job) return undefined;
-  const updated = normalizeStoredJob({ ...job, outcome }, job);
+  const outcomeSnapshot = job.outcomeSnapshot || (job.evaluation ? {
+    score: job.evaluation.score,
+    verdict: job.evaluation.verdict,
+    evaluator: job.evaluation.evaluator,
+    createdAt: job.evaluation.createdAt,
+  } : undefined);
+  const updated = normalizeStoredJob({ ...job, outcome, outcomeSnapshot }, job);
   const tx = db.transaction(['jobs', 'events'], 'readwrite');
   await tx.objectStore('jobs').put(updated);
   await addEvent(tx, { jobId: id, type: 'outcome_recorded', outcome });
@@ -280,6 +331,17 @@ export async function saveEvents(events: WriteEvent[]): Promise<ApplicationEvent
   return saved;
 }
 
+export async function getRepositoryStats(): Promise<{ version: number; jobCount: number; eventCount: number; discoveryCount: number; followUpCount: number }> {
+  const db = await getDb();
+  const [jobCount, eventCount, discoveryCount, followUpCount] = await Promise.all([
+    db.count('jobs'),
+    db.count('events'),
+    db.count('discovery'),
+    db.count('followUps'),
+  ]);
+  return { version: db.version, jobCount, eventCount, discoveryCount, followUpCount };
+}
+
 export const jobRepository = {
   getActiveJobs,
   getAllJobs,
@@ -293,4 +355,5 @@ export const jobRepository = {
   deleteJob,
   getEvents,
   saveEvents,
+  getRepositoryStats,
 };

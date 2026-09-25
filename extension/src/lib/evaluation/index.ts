@@ -118,15 +118,4 @@ export function evaluateJob(job: DetectedJob, profile?: Profile, preferences: Us
   return makeReport(job, profile, preferences, text);
 }
 
-export function isProfileFilled(profile?: Profile | null): boolean {
-  return Boolean(profile?.roles?.trim() && profile?.skills?.trim());
-}
-
-export function getProfileMissingNotice(profile?: Profile | null): string | null {
-  if (!profile || (!profile.roles?.trim() && !profile.skills?.trim())) {
-    return 'Please complete your Profile (Target Roles & Skills) before evaluating jobs.';
-  }
-  if (!profile.roles?.trim()) return 'Please set your Target Roles in Profile before evaluating jobs.';
-  if (!profile.skills?.trim()) return 'Please set your Skills & Tech Stack in Profile before evaluating jobs.';
-  return null;
-}
+export { getProfileMissingNotice, isProfileFilled } from '@/src/domain/settings';

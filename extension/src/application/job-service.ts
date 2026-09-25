@@ -103,6 +103,12 @@ export class JobService {
     return result.job;
   }
 
+  async saveFromDiscovery(job: DetectedJob): Promise<{ job: Job; isNew: boolean }> {
+    const result = await this.repository.saveJob({ ...job, column: 'to_apply', status: 'active' });
+    this.events.changed('discovery-saved-as-job', result.job);
+    return { job: result.job, isNew: result.isNew };
+  }
+
   async move(id: string, column: Column): Promise<Job | undefined> {
     const job = await this.repository.updateJobColumn(id, column);
     if (job) this.events.changed('job-moved', job);
@@ -125,6 +131,24 @@ export class JobService {
     const job = await this.repository.recordOutcome(id, outcome);
     if (job) this.events.changed('job-outcome-updated', job);
     return job;
+  }
+
+  async addActivity(
+    jobId: string,
+    type: Extract<ApplicationEvent['type'], `follow_up_${string}`>,
+    metadata?: ApplicationEvent['metadata'],
+  ): Promise<void> {
+    const job = await this.repository.getJob(jobId);
+    if (!job) throw new Error('Job not found.');
+    const updated = await this.repository.saveJob(job, { addCreationEvent: false });
+    await this.repository.saveEvents([{
+      id: `event-${crypto.randomUUID()}`,
+      jobId,
+      type,
+      at: new Date().toISOString(),
+      metadata,
+    }]);
+    this.events.changed('job-activity-added', updated.job);
   }
 
   async evaluateJob(

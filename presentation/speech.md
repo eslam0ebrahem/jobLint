@@ -24,7 +24,7 @@ Two problems sit underneath that mess. First, evaluating fit against your own sk
 So here’s what I built — JobLint in one glance.
 
 ### Slide 6 · At a glance (0:29)
-JobLint is a WXT extension for LinkedIn and Indeed. It detects the current posting, clips it in one click, runs a deterministic local evaluation against the candidate profile, and stores it in a six-stage Kanban board. AI review is available only when someone explicitly configures it. Jobs and events live in IndexedDB; profile and scoring preferences live in local extension storage. There is no account, backend, or analytics system.
+JobLint is a WXT extension for LinkedIn and Indeed. It detects the current posting, clips it in one click, runs a deterministic local evaluation against the candidate profile, and stores it in a six-stage Kanban board. A user-triggered search scan can also fill a local discovery inbox, and the details drawer can build an evidence-grounded application packet. AI review is available only when someone explicitly configures it. Jobs, discovery cards, follow-ups, and events live in IndexedDB; profile and scoring preferences live in local extension storage. There is no account, backend, or analytics system.
 
 ### Slide 7 · Floating badge (0:38)
 Here’s the first interaction. On a supported job page, JobLint injects an isolated Shadow-DOM badge. One click extracts the fields it can find, cleans the description, checks identity-based duplicates, and runs the local score. If the posting is already saved, the badge says so. Detection uses URL and canonical signals, JSON-LD, and several DOM selector layers. If a site changes, the dashboard shows diagnostics and the manual-entry form remains available. Indeed is configured across nine domains, not a claim of worldwide coverage.
@@ -33,7 +33,7 @@ Here’s the first interaction. On a supported job page, JobLint injects an isol
 The evaluator is evidence-first. It extracts skills with aliases, classifies role and seniority, scores location and work mode, looks for compensation and risk signals, and reports missing data instead of inventing it. The result has fit, opportunity, and safety dimensions, confidence, a verdict, and a traceable evidence list. The optional AI adapter is different: it sends a bounded snapshot to the endpoint I choose and attaches an advisory assessment. It never replaces the deterministic score, and malformed output or a timeout falls back safely. Automatic enhancement runs only when the profile preference, AI enablement, and the config-level auto-enhancement flag are all enabled.
 
 ### Slide 9 · Pipeline (0:23)
-The board has six stages: To Apply, Applied, Assessment, Interviewing, Offer, and Rejected. Cards can move across stages, with search, risk and source filters, insights, outcomes, notes, and an activity timeline in the details drawer. CSV is formula-safe for spreadsheets. JSON exports include jobs, events, profile, and preferences, while restore previews conflicts before writing.
+The board has six stages: To Apply, Applied, Assessment, Interviewing, Offer, and Rejected. Cards can move across stages, with search, risk and source filters, insights, outcomes, follow-ups, normalized facts, an evidence-grounded local application packet, and an activity timeline in the details drawer. Outcome analytics refuse calibration claims below a 20-outcome minimum. CSV is formula-safe for spreadsheets. JSON exports include jobs, facts, outcome snapshots, events, follow-ups, profile, and preferences, while restore previews conflicts before writing.
 
 ## Part 3 — How? (slides 10–12)
 
@@ -41,10 +41,10 @@ The board has six stages: To Apply, Applied, Assessment, Interviewing, Offer, an
 Now — how is it actually built?
 
 ### Slide 11 · Architecture (0:32)
-The content script owns detection and the badge, but not persistence. Every UI action crosses one typed runtime gateway into a background composition root. The background wires dependencies and dispatches actions; application services own job, backup, settings, and AI-review workflows. Pure domain modules hold identity, scoring, insights, and backup rules, while infrastructure adapters own IndexedDB, local extension storage, detector-platform access, and AI HTTP. The UI never reaches into persistence directly, and optional AI remains outside the deterministic core.
+The content script owns detection, the badge, and explicit card scanning, but not persistence. Every UI action crosses one typed runtime gateway into a background composition root. The background wires dependencies and dispatches actions; application services own job, discovery, packet, follow-up/reminder, analytics, backup, settings, and AI-review workflows. Pure domain modules hold identity, facts, scoring, packet, calibration, and backup rules, while infrastructure adapters own IndexedDB, local extension storage, alarms/notifications, detector-platform access, and AI HTTP. The UI never reaches into persistence directly, and optional AI remains outside the deterministic core.
 
 ### Slide 12 · Tech stack (0:25)
-The stack is WXT for extension bundling and browser targets, React 19, strict TypeScript, Tailwind v4, and a small promise wrapper over IndexedDB. Vitest, jsdom, and fake IndexedDB run 33 tests across domain policies, application services, and integration boundaries. There is no backend and no telemetry. If AI is enabled, the browser calls the configured provider directly with the user’s own key.
+The stack is WXT for extension bundling and browser targets, React 19, strict TypeScript, Tailwind v4, and a small promise wrapper over IndexedDB. Vitest, jsdom, and fake IndexedDB run 55 tests across domain policies, application services, migrations, detectors, packets, reminders, analytics, and integration boundaries. The production gateway smoke harness runs 37 actions with zero network calls. There is no backend and no telemetry. If AI is enabled, the browser calls the configured provider directly with the user’s own key.
 
 ## Part 4 — Insights and close (slides 13–14)
 
@@ -52,7 +52,7 @@ The stack is WXT for extension bundling and browser targets, React 19, strict Ty
 Three lessons stand out. First, job-site DOMs are fragile; structured data, canonical URLs, layered selectors, diagnostics, and a manual fallback are all necessary. Second, style isolation matters whenever an extension touches a page it does not own. Third, local-first is a product decision: it makes the default workflow useful offline and makes the network boundary visible instead of hiding it.
 
 ### Slide 14 · Close (0:17)
-JobLint is MIT-licensed and installs from a local production build. Local evaluation already runs on clip; AI remains opt-in. Next I’d package it for store review, expand detector fixtures, and learn from real users. If you’ve ever lost track of an application, this one’s for you. Thanks!
+JobLint is MIT-licensed and installs from a local production build. Local evaluation, discovery, packets, reminders, and outcome calibration safeguards are available without a network; AI remains opt-in. Next I’d package it for store review, expand detector fixtures, and learn from real users. If you’ve ever lost track of an application, this one’s for you. Thanks!
 
 ## Timing cheat sheet
 

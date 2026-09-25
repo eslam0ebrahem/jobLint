@@ -15,12 +15,15 @@ describe('backup parser', () => {
       schemaVersion: 2,
       jobs: [{ source: 'manual', title: 'Designer', company: 'Acme' }, { source: 'manual', title: '', company: 'Acme' }],
       events: [{ id: 'e1', jobId: 'missing', type: 'imported', at: '2026-01-01T00:00:00.000Z' }, { id: 'bad', jobId: 'x', type: 'unknown', at: 'x' }],
+      followUps: [{ id: 'f1', jobId: 'missing', title: 'Call recruiter', dueAt: '2099-01-01T00:00:00.000Z', status: 'open' }, { id: 'bad', jobId: 'x', title: '', dueAt: 'not-a-date' }],
       profile: { roles: 'Designer' },
       preferences: { riskTolerance: 'cautious' },
     });
     expect(parsed.jobs).toHaveLength(1);
     expect(parsed.events).toHaveLength(1);
-    expect(parsed.issues).toHaveLength(2);
+    expect(parsed.followUps).toHaveLength(1);
+    expect(parsed.followUps[0]).toMatchObject({ id: 'f1', jobId: 'missing', title: 'Call recruiter' });
+    expect(parsed.issues).toHaveLength(3);
     expect(parsed.profile?.roles).toBe('Designer');
     expect(parsed.preferences?.riskTolerance).toBe('cautious');
   });

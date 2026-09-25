@@ -48,5 +48,20 @@ export function normalizePreferences(value: unknown): UserPreferences {
     prioritizeFit: boundedNumber(input.prioritizeFit, DEFAULT_PREFERENCES.prioritizeFit, 0, 1),
     prioritizeOpportunity: boundedNumber(input.prioritizeOpportunity, DEFAULT_PREFERENCES.prioritizeOpportunity, 0, 1),
     riskTolerance,
+    remindersEnabled: input.remindersEnabled === true,
+    reminderLeadDays: boundedNumber(input.reminderLeadDays, DEFAULT_PREFERENCES.reminderLeadDays || 3, 0, 30),
   };
+}
+
+export function isProfileFilled(profile?: Profile | null): boolean {
+  return Boolean(profile?.roles?.trim() && profile?.skills?.trim());
+}
+
+export function getProfileMissingNotice(profile?: Profile | null): string | null {
+  if (!profile || (!profile.roles?.trim() && !profile.skills?.trim())) {
+    return 'Please complete your Profile (Target Roles & Skills) before evaluating jobs.';
+  }
+  if (!profile.roles?.trim()) return 'Please set your Target Roles in Profile before evaluating jobs.';
+  if (!profile.skills?.trim()) return 'Please set your Skills & Tech Stack in Profile before evaluating jobs.';
+  return null;
 }

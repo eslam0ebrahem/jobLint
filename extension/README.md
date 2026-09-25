@@ -7,8 +7,8 @@ This directory contains the WXT source for JobLint, a local-first job clipper, e
 - Content scripts run only on the host patterns in `src/lib/detectors/registry.ts`.
 - Popup, dashboard, profile, and options are React surfaces that communicate through `src/lib/messages.ts` and `src/lib/gateway.ts`; job and event state is owned by focused hooks.
 - `entrypoints/background.ts` is the composition root and gateway dispatcher. Injected application services own job, backup, settings, and AI workflows.
-- Pure domain modules own identity, job normalization, insights, settings/AI policy, and v1/v2 backup parsing. They do not import browser APIs.
-- Infrastructure adapters own IndexedDB schema v6, `browser.storage.local`, detector-platform access, and AI HTTP transport.
+- Pure domain modules own identity, job/fact normalization, insights, discovery/packet/calibration policy, settings/AI policy, and v1/v2 backup parsing. They do not import browser APIs.
+- Infrastructure adapters own IndexedDB schema v8, `browser.storage.local`, detector-platform access, alarms/notifications, and AI HTTP transport.
 - Local deterministic evaluation is always available. AI is disabled by default; an explicit AI request creates an advisory assessment without replacing the local score or verdict. Automatic enhancement requires all three opt-ins: user preference, `AiConfig.enabled`, and `AiConfig.autoEnhance`.
 
 The full user-facing guide, privacy boundary, supported domains, and backup behavior live in the repository [`README.md`](../README.md).
@@ -25,7 +25,7 @@ npm run build
 npm run build:firefox
 ```
 
-`npm test` uses Vitest with jsdom and fake IndexedDB. The 33-test suite covers identity and URL canonicalization, pure job normalization and insights, local evaluation, AI malformed/timeout fallback behavior, IndexedDB migration/events/ordering, backup parsing and conflict/event remapping, settings mutations, application-service policy, detector fixtures, and the typed gateway contract.
+`npm test` uses Vitest with jsdom and fake IndexedDB. The 55-test suite covers identity, job/fact normalization, discovery, local evaluation, packets, reminders, outcome analytics/calibration safeguards, AI fallback, IndexedDB migrations, backup parsing, settings, detector fixtures, and the typed gateway contract. `npm run smoke:gateway` builds the production background bundle and runs a zero-network 37-action harness.
 
 ## Source map
 
@@ -33,27 +33,26 @@ npm run build:firefox
 entrypoints/
   background.ts       composition root, gateway dispatch, events, lifecycle
   content.ts          detector lifecycle and badge bridge
-  popup/              clip, local score, explicit AI review, manual fallback
-  dashboard/          Kanban, insights, outcomes, diagnostics, restore review
+  popup/              clip, local score, discovery scan, explicit AI review
+  dashboard/          Kanban, discovery inbox, packets, insights, analytics, diagnostics
   profile/            candidate context and score weights
-  options/            opt-in provider and network settings
+  options/            opt-in provider, reminder, and network settings
 src/
-  application/        job, backup, settings, AI-settings, and review use cases
-  domain/             identity, normalization, insights, policy, backup parsing
+  application/        job, discovery, packet, follow-up, reminder, analytics, backup, settings
+  domain/             identity, facts, discovery, packet, calibration, backup policy
   infrastructure/
-    database/         IndexedDB v6 repository and atomic event writes
+    database/         IndexedDB v8 repositories, migrations, and atomic event writes
     settings/         browser.storage.local profile/preferences adapter
     ai/               AI config storage and HTTP transport adapters
     detectors/        supported-tab health adapter
+    reminders.ts      alarms and optional notification adapter
   components/         shared cards, lists, and evaluation report UI
   hooks/              useJobs collection state + useJobEvents timeline state
   lib/messages.ts     request/event protocol and runtime validation
   lib/gateway.ts      typed client transport and event subscription
-  lib/detectors/      shared registry, JSON-LD, and platform DOM adapters
+  lib/detectors/      shared registry, JSON-LD, platform DOM, and card scanners
   lib/evaluation/     deterministic evaluator and pure scoring rules
-  lib/{ai,backup,db,identity,settings}.ts
-                       compatibility re-exports for previous internal paths
-tests/                 9 Vitest suites / 33 tests
+tests/                 15 Vitest suites / 55 tests
 wxt.config.ts          manifest permissions generated from the registry
 ```
 

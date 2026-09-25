@@ -5,6 +5,15 @@ import { sendGatewayRequest, subscribeGateway } from '@/src/lib/gateway';
 describe('typed gateway contract', () => {
   it('accepts known requests and rejects malformed messages', () => {
     expect(isGatewayRequest({ action: 'list-jobs' })).toBe(true);
+    expect(isGatewayRequest({ action: 'get-extension-diagnostics' })).toBe(true);
+    expect(isGatewayRequest({ action: 'scan-discovery-jobs' })).toBe(true);
+    expect(isGatewayRequest({ action: 'list-discovery' })).toBe(true);
+    expect(isGatewayRequest({ action: 'save-discovery', id: 'discovery-1' })).toBe(true);
+    expect(isGatewayRequest({ action: 'create-follow-up', jobId: 'job-1', title: 'Call recruiter', dueAt: '2099-01-01' })).toBe(true);
+    expect(isGatewayRequest({ action: 'complete-follow-up', id: 'follow-up-1' })).toBe(true);
+    expect(isGatewayRequest({ action: 'get-application-packet', id: 'job-1' })).toBe(true);
+    expect(isGatewayRequest({ action: 'get-outcome-analytics' })).toBe(true);
+    expect(isGatewayRequest({ action: 'dismiss-discovery' })).toBe(false);
     expect(isGatewayRequest({ action: 'clip-job', job: { source: 'linkedin', title: 'Engineer', company: 'Acme' } })).toBe(true);
     expect(isGatewayRequest({ action: 'move-job', id: 'job-1', column: 'applied' })).toBe(true);
     expect(isGatewayRequest({ action: 'move-job', id: 'job-1', column: 'not-a-column' })).toBe(true);

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AiSettingsService } from '@/src/application/ai-settings-service';
 import { BackupService } from '@/src/application/backup-service';
+import { DiagnosticsService } from '@/src/application/diagnostics-service';
 import { JobService } from '@/src/application/job-service';
 import { SettingsService } from '@/src/application/settings-service';
 import type { AiReviewer } from '@/src/application/ai-review';
@@ -8,6 +9,7 @@ import { DEFAULT_AI_CONFIG, isAutomaticAiEnhancementEnabled } from '@/src/domain
 import { DEFAULT_PREFERENCES, type AiConfig } from '@/src/types/job';
 import { jobRepository } from '@/src/infrastructure/database/job-repository';
 import { browserAiConfigRepository } from '@/src/infrastructure/ai/config-repository';
+import { browserDiagnosticsAdapter } from '@/src/infrastructure/diagnostics';
 import { browserSettingsRepository } from '@/src/infrastructure/settings/browser-settings-repository';
 import { evaluateJob } from '@/src/lib/evaluation';
 import type { DetectedJob, JobEvaluation } from '@/src/types/job';
@@ -46,6 +48,63 @@ function createAiSettings(events: { onConfigChanged?: () => void } = {}) {
 }
 
 describe('application services', () => {
+  it('returns a privacy-safe diagnostics snapshot without AI secrets', async () => {
+    const service = new DiagnosticsService(
+      { getRepositoryStats: vi.fn(async () => ({ version: 8, jobCount: 4, eventCount: 9, discoveryCount: 3, followUpCount: 2 })) },
+      {
+        getStorageUsage: vi.fn(async () => ({ usage: 128, quota: 1024 })),
+        getManifest: vi.fn(() => ({ version: '1.0.0', permissions: ['storage'], hostPermissions: ['*://*.linkedin.com/*'] })),
+      },
+      {
+        getConfig: vi.fn(async () => ({
+          ...DEFAULT_AI_CONFIG,
+          enabled: true,
+          baseUrl: 'https://api.example.com/v1/chat/completions',
+          apiKey: 'super-secret',
+        })),
+      },
+      [{ source: 'linkedin', label: 'LinkedIn', domains: ['linkedin.com'] }],
+      () => '2026-09-25T00:00:00.000Z',
+    );
+
+    const snapshot = await service.getSnapshot();
+    expect(snapshot).toMatchObject({
+      generatedAt: '2026-09-25T00:00:00.000Z',
+      database: { version: 8, jobCount: 4, eventCount: 9, discoveryCount: 3, followUpCount: 2 },
+      storage: { usage: 128, quota: 1024 },
+      ai: { enabled: true, endpointHost: 'api.example.com' },
+    });
+    expect(JSON.stringify(snapshot)).not.toContain('super-secret');
+  });
+
+  it('reads storage estimates and effective host permissions through the browser adapter', async () => {
+    const storageDescriptor = Object.getOwnPropertyDescriptor(navigator, 'storage');
+    Object.defineProperty(navigator, 'storage', {
+      configurable: true,
+      value: { estimate: vi.fn(async () => ({ usage: 12, quota: 2048 })) },
+    });
+    Object.defineProperty(browser.runtime, 'getManifest', {
+      configurable: true,
+      value: vi.fn(() => ({
+        version: '1.0.0',
+        permissions: ['storage', '*://*.indeed.com/*'],
+      })),
+    });
+
+    try {
+      await expect(browserDiagnosticsAdapter.getStorageUsage()).resolves.toEqual({ usage: 12, quota: 2048 });
+      expect(browserDiagnosticsAdapter.getManifest()).toEqual({
+        version: '1.0.0',
+        permissions: ['storage'],
+        hostPermissions: ['*://*.indeed.com/*'],
+      });
+    } finally {
+      if (storageDescriptor) Object.defineProperty(navigator, 'storage', storageDescriptor);
+      else Reflect.deleteProperty(navigator, 'storage');
+      Reflect.deleteProperty(browser.runtime, 'getManifest');
+    }
+  });
+
   it('requires preference, enabled config, and config auto-enhancement for automatic AI', () => {
     const enabled: AiConfig = {
       ...DEFAULT_AI_CONFIG,
@@ -174,6 +233,8 @@ describe('application services', () => {
       prioritizeFit: 1,
       prioritizeOpportunity: 0,
       riskTolerance: 'balanced',
+      remindersEnabled: false,
+      reminderLeadDays: 3,
     });
     expect(onProfileChanged).toHaveBeenCalledTimes(1);
     expect(onPreferencesChanged).toHaveBeenCalledTimes(1);

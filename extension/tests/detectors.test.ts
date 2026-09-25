@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { detectLinkedIn } from '@/src/lib/detectors/linkedin';
 import { detectIndeed } from '@/src/lib/detectors/indeed';
+import { scanIndeedDiscoveryCards, scanLinkedInDiscoveryCards } from '@/src/lib/detectors/discovery';
 import { extractStructuredJob, getCanonicalUrl } from '@/src/lib/detectors/structured';
 import { getPlatformForHost, SUPPORTED_HOST_PERMISSIONS } from '@/src/lib/detectors/registry';
 
@@ -49,6 +50,40 @@ describe('detectors', () => {
     vi.stubGlobal('location', { hostname: 'www.indeed.com', href: 'https://www.indeed.com/viewjob?jk=indeed-42', search: '?jk=indeed-42', pathname: '/viewjob' });
     const result = detectIndeed();
     expect(result).toMatchObject({ source: 'indeed', jobId: 'indeed-42', title: 'Senior React Engineer', company: 'Northstar Labs' });
+    vi.unstubAllGlobals();
+  });
+
+  it('scans LinkedIn result cards without falling back to document-wide text', () => {
+    document.body.innerHTML = `
+      <div class="job-card-container" data-occludable-job-id="li-101">
+        <a href="/jobs/view/Senior-Engineer-101"><h3 class="job-card-list__title">Senior Engineeer</h3></a>
+        <span class="artdeco-entity-lockup__subtitle">Northstar Labs</span>
+        <span class="job-search__location">Remote</span>
+      </div>
+      <div class="job-card-container" data-occludable-job-id="li-102">
+        <a href="/jobs/view/Product-Designer-102"><h3 class="job-card-list__title">Product Designer</h3></a>
+        <span class="artdeco-entity-lockup__subtitle">Acme</span>
+      </div>
+      <h3>Unrelated page heading</h3>
+    `;
+    const result = scanLinkedInDiscoveryCards();
+    expect(result).toHaveLength(2);
+    expect(result[0]).toMatchObject({ source: 'linkedin', jobId: 'li-101', title: 'Senior Engineeer', company: 'Northstar Labs', location: 'Remote' });
+    expect(result[0]?.detection?.strategy).toBe('linkedin-search-card');
+  });
+
+  it('scans Indeed cards and keeps the card boundary', () => {
+    document.body.innerHTML = `
+      <div class="job_seen_beacon" data-jk="indeed-77">
+        <a class="jcs-JobTitle" href="/viewjob?jk=indeed-77"><h2 class="jobTitle">Backend Engineer</h2></a>
+        <span class="companyName">Acme Labs</span>
+        <span class="companyLocation">Berlin</span>
+      </div>
+      <h2>Unrelated Indeed heading</h2>
+    `;
+    vi.stubGlobal('location', { hostname: 'www.indeed.de', href: 'https://www.indeed.de/jobs', search: '', pathname: '/jobs' });
+    const result = scanIndeedDiscoveryCards();
+    expect(result).toEqual([expect.objectContaining({ source: 'indeed', jobId: 'indeed-77', title: 'Backend Engineer', company: 'Acme Labs', location: 'Berlin' })]);
     vi.unstubAllGlobals();
   });
 });

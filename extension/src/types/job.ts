@@ -22,6 +22,42 @@ export type ApplicationOutcome =
 export type RiskLevel = 'low' | 'medium' | 'high';
 export type Verdict = 'Apply' | 'Caution' | 'Skip';
 export type DetectionState = 'detected' | 'partial' | 'unrecognized';
+export type EmploymentType = 'full-time' | 'part-time' | 'contract' | 'temporary' | 'internship' | 'volunteer' | 'other';
+export type WorkMode = 'remote' | 'hybrid' | 'on-site' | 'unknown';
+export type DeadlineKind = 'application' | 'posting' | 'event' | 'unknown';
+export type FollowUpKind = 'follow-up' | 'application' | 'interview' | 'custom';
+export type FollowUpStatus = 'open' | 'completed' | 'dismissed';
+
+export interface JobDeadline {
+  kind: DeadlineKind;
+  date: string;
+  raw: string;
+  confidence: number;
+  source: 'description' | 'title' | 'url' | 'manual';
+}
+
+export interface CompensationFacts {
+  raw: string;
+  currency?: string;
+  min?: number;
+  max?: number;
+  period?: 'hour' | 'day' | 'week' | 'month' | 'year';
+}
+
+export interface JobFacts {
+  version: 1;
+  employmentType: EmploymentType;
+  workMode: WorkMode;
+  seniority?: string;
+  skills: string[];
+  benefits: string[];
+  qualifications: string[];
+  compensation?: CompensationFacts;
+  deadline?: JobDeadline;
+  postedAt?: string;
+  extractedAt: string;
+  evidence: string[];
+}
 
 export interface JobIdentity {
   /** Stable key used to collapse repeated captures of the same posting. */
@@ -122,6 +158,22 @@ export interface DetectedJob {
   jobUrl?: string;
   evaluation?: JobEvaluation;
   detection?: DetectionMetadata;
+  facts?: JobFacts;
+}
+
+export interface FollowUp {
+  id: string;
+  jobId: string;
+  kind: FollowUpKind;
+  title: string;
+  dueAt: string;
+  notes?: string;
+  status: FollowUpStatus;
+  reminderAt?: string;
+  reminderId?: string;
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
 }
 
 export interface ApplicationEvent {
@@ -134,6 +186,10 @@ export interface ApplicationEvent {
     | 'evaluation_completed'
     | 're_evaluated'
     | 'outcome_recorded'
+    | 'follow_up_created'
+    | 'follow_up_updated'
+    | 'follow_up_completed'
+    | 'follow_up_deleted'
     | 'imported';
   at: string;
   from?: Column;
@@ -142,13 +198,22 @@ export interface ApplicationEvent {
   metadata?: Record<string, string | number | boolean>;
 }
 
+export interface OutcomeSnapshot {
+  score: number;
+  verdict: JobEvaluation['verdict'];
+  evaluator: JobEvaluation['evaluator'];
+  createdAt: string;
+}
+
 export interface Job extends DetectedJob {
   id: string;
   identity?: JobIdentity;
   column: Column;
   status: JobStatus;
+  facts?: JobFacts;
   notes?: string;
   outcome?: ApplicationOutcome;
+  outcomeSnapshot?: OutcomeSnapshot;
   clippedAt: string;
   createdAt: string;
   updatedAt: string;
@@ -178,6 +243,8 @@ export interface UserPreferences {
   prioritizeFit: number;
   prioritizeOpportunity: number;
   riskTolerance: 'cautious' | 'balanced' | 'opportunistic';
+  remindersEnabled?: boolean;
+  reminderLeadDays?: number;
 }
 
 export type AiProviderId = 'openrouter' | 'openai' | 'groq' | 'minimax' | 'ollama' | 'custom';
@@ -230,6 +297,8 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   prioritizeFit: 0.6,
   prioritizeOpportunity: 0.25,
   riskTolerance: 'balanced',
+  remindersEnabled: false,
+  reminderLeadDays: 3,
 };
 
 export const DEFAULT_PROFILE: Profile = {

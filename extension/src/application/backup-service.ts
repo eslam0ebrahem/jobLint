@@ -1,4 +1,4 @@
-import type { ApplicationEvent, Profile, UserPreferences } from '@/src/types/job';
+import type { ApplicationEvent, FollowUp, Profile, UserPreferences } from '@/src/types/job';
 import {
   parseBackupPayload,
   type BackupConflictStrategy,
@@ -22,6 +22,11 @@ export interface BackupEvents {
   metadataChanged(): void;
 }
 
+export interface BackupFollowUpRepository {
+  getAll(): Promise<FollowUp[]>;
+  save(record: FollowUp): Promise<FollowUp>;
+}
+
 export class BackupService {
   constructor(
     private readonly jobs: JobRepository,
@@ -29,6 +34,7 @@ export class BackupService {
     private readonly events: BackupEvents,
     private readonly parse: (payload: unknown) => ParsedBackup = parseBackupPayload,
     private readonly now: () => string = () => new Date().toISOString(),
+    private readonly followUps?: BackupFollowUpRepository,
   ) {}
 
   async preview(payload: unknown): Promise<BackupPreview> {
@@ -38,10 +44,11 @@ export class BackupService {
       if (await this.jobs.findJobByIdentity(item.input)) conflictCount += 1;
     }
     return {
-      valid: parsed.jobs.length > 0 || parsed.events.length > 0 || Boolean(parsed.profile || parsed.preferences),
+      valid: parsed.jobs.length > 0 || parsed.events.length > 0 || parsed.followUps.length > 0 || Boolean(parsed.profile || parsed.preferences),
       schemaVersion: parsed.schemaVersion,
       jobCount: parsed.jobs.length,
       eventCount: parsed.events.length,
+      followUpCount: parsed.followUps.length,
       conflictCount,
       hasProfile: Boolean(parsed.profile),
       hasPreferences: Boolean(parsed.preferences),
@@ -50,17 +57,20 @@ export class BackupService {
   }
 
   async export(): Promise<BackupPayload> {
-    const [jobs, events, profile, preferences] = await Promise.all([
+    const [jobs, events, profile, preferences, storedFollowUps] = await Promise.all([
       this.jobs.getAllJobs(),
       this.jobs.getEvents(),
       this.settings.getProfile(),
       this.settings.getPreferences(),
+      this.followUps?.getAll(),
     ]);
+    const followUps = this.followUps ? await storedFollowUps : undefined;
     return {
       schemaVersion: 2,
       exportedAt: this.now(),
       jobs,
       events,
+      ...(followUps ? { followUps } : {}),
       profile,
       preferences,
     };
@@ -92,6 +102,16 @@ export class BackupService {
       else replaced += 1;
     }
 
+    const remappedFollowUps: FollowUp[] = [];
+    for (const followUp of parsed.followUps) {
+      const jobId = idMap.get(followUp.jobId) || followUp.jobId;
+      if (await this.jobs.getJob(jobId)) {
+        const remapped = { ...followUp, jobId };
+        if (this.followUps) await this.followUps.save(remapped);
+        remappedFollowUps.push(remapped);
+      }
+    }
+
     const remappedEvents: ApplicationEvent[] = [];
     for (const event of parsed.events) {
       const jobId = idMap.get(event.jobId) || event.jobId;
@@ -115,6 +135,7 @@ export class BackupService {
       replaced,
       skipped,
       eventsImported: remappedEvents.length,
+      followUpsImported: remappedFollowUps.length,
       metadataImported,
       issues,
     };

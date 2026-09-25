@@ -1,4 +1,5 @@
 import { detectJob, getDetectorHealth } from '@/src/lib/detectors';
+import { scanDiscoveryCards } from '@/src/lib/detectors/discovery';
 import { renderFloatingBadge, removeFloatingBadge } from '@/src/lib/floatingBadge';
 import { sendGatewayRequest } from '@/src/lib/gateway';
 import { SUPPORTED_MATCH_PATTERNS } from '@/src/lib/detectors/registry';
@@ -63,6 +64,10 @@ export default defineContentScript({
       const action = (message as { action?: string } | undefined)?.action;
       if (action === 'detector-health') {
         send(getDetectorHealth(sender.tab?.id ?? -1, location.href));
+        return false;
+      }
+      if (action === 'scan-discovery-cards') {
+        send(scanDiscoveryCards());
         return false;
       }
       if (action === 'clip-job') {

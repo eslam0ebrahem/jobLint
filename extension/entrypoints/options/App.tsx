@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { DEFAULT_AI_CONFIG, PROVIDER_PRESETS } from '@/src/lib/ai';
+import { DEFAULT_AI_CONFIG, PROVIDER_PRESETS } from '@/src/domain/ai';
 import { sendGatewayRequest } from '@/src/lib/gateway';
 import { DEFAULT_PREFERENCES, type AiConfig, type AiProviderId, type UserPreferences } from '@/src/types/job';
 
@@ -82,6 +82,15 @@ export default function App() {
     setErrors([]);
     setStatus(null);
     try {
+      if (preferences.remindersEnabled) {
+        const permissionApi = (browser as unknown as { permissions?: { request(details: { permissions: string[] }): Promise<boolean> } }).permissions;
+        const granted = permissionApi ? await permissionApi.request({ permissions: ['notifications'] }) : false;
+        if (!granted) {
+          setPreferences((current) => ({ ...current, remindersEnabled: false }));
+          setErrors(['Browser notifications were not enabled. Reminders remain off.']);
+          return;
+        }
+      }
       const saved = await sendGatewayRequest({ action: 'save-ai-config', config });
       await sendGatewayRequest({
         action: 'save-preferences',
@@ -180,6 +189,11 @@ export default function App() {
               <input type="text" value={config.model} onChange={(event) => setConfig((current) => ({ ...current, model: event.target.value }))} placeholder="Enter a model ID" className="w-full rounded-xl border border-slate-300 px-3 py-2.5 font-mono text-sm outline-none focus:border-violet-500" />
             )}
           </label>
+        </section>
+
+        <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <Toggle checked={preferences.remindersEnabled ?? false} onChange={(enabled) => { setPreferences((current) => ({ ...current, remindersEnabled: enabled })); setStatus(null); }} label="Enable local browser reminders" description="When explicitly enabled, JobLint schedules local alarms for normalized deadlines and follow-up dates. Notifications never contain a job description or profile data." />
+          <label className="block max-w-xs"><span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-600">Reminder lead time</span><select value={preferences.reminderLeadDays ?? 3} onChange={(event) => setPreferences((current) => ({ ...current, reminderLeadDays: Number(event.target.value) }))} disabled={!preferences.remindersEnabled} className="w-full cursor-pointer rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-emerald-500 disabled:opacity-50"><option value={0}>On the due date</option><option value={1}>1 day before</option><option value={3}>3 days before</option><option value={7}>1 week before</option><option value={14}>2 weeks before</option></select></label>
         </section>
 
         <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

@@ -9,10 +9,12 @@ interface Props {
   onImportJson: (file: File) => void;
   onAddManual: () => void;
   onShowInsights: () => void;
+  onShowDiscovery: () => void;
   onShowDiagnostics: () => void;
+  discoveryCount: number;
 }
 
-export function DashboardHeader({ totalJobs, search, onSearchChange, onExportCsv, onExportJson, onImportJson, onAddManual, onShowInsights, onShowDiagnostics }: Props) {
+export function DashboardHeader({ totalJobs, search, onSearchChange, onExportCsv, onExportJson, onImportJson, onAddManual, onShowInsights, onShowDiscovery, onShowDiagnostics, discoveryCount }: Props) {
   const [showMenu, setShowMenu] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -36,6 +38,7 @@ export function DashboardHeader({ totalJobs, search, onSearchChange, onExportCsv
       <div className="flex w-full items-center gap-2 sm:w-auto">
         <input type="search" placeholder="Search title, company, location…" value={search} onChange={(event) => onSearchChange(event.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs outline-none transition focus:border-indigo-500 sm:w-56" />
         <button type="button" onClick={onAddManual} title="Add a job manually" className="shrink-0 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">+ Add</button>
+        <button type="button" onClick={onShowDiscovery} title="Open the discovery inbox" className="shrink-0 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100">Inbox {discoveryCount > 0 && <span className="ml-1 rounded-full bg-emerald-200 px-1.5 py-0.5 text-[10px]">{discoveryCount}</span>}</button>
         <button type="button" onClick={onShowInsights} title="Open search insights" className="shrink-0 rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200">Insights</button>
         <div className="relative">
           <button type="button" onClick={(event) => { event.stopPropagation(); setShowMenu((current) => !current); }} className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200" aria-expanded={showMenu}>Data <span className="text-[10px] text-slate-400">▾</span></button>
