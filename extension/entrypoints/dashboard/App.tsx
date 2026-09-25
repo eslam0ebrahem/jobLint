@@ -4,10 +4,12 @@ import { sendGatewayRequest, subscribeGateway } from '@/src/lib/gateway';
 import { exportBackupToJson, exportJobsToCsv, readBackupFile } from '@/src/lib/export';
 import type { ExtensionDiagnostics } from '@/src/domain/diagnostics';
 import type { DiscoveryInboxSnapshot } from '@/src/types/discovery';
-import type { OutcomeAnalytics } from '@/src/types/analytics';
+import type { FunnelAnalytics, OutcomeAnalytics } from '@/src/types/analytics';
 import type { BackupConflictStrategy, BackupPreview } from '@/src/lib/messages';
+import type { DecisionInbox } from '@/src/types/decisions';
 import type { ApplicationOutcome, Column, DetectedJob, DetectorHealth, Job, JobInsightSummary, RiskLevel } from '@/src/types/job';
 import { DashboardHeader } from './components/DashboardHeader';
+import { DecisionDialog } from './components/DecisionDialog';
 import { KanbanColumn } from './components/KanbanColumn';
 import { JobDetailsDrawer } from './components/JobDetailsDrawer';
 import { COLUMNS } from './constants';
@@ -26,11 +28,14 @@ export default function App() {
   const [evaluationBusy, setEvaluationBusy] = useState<EvaluationBusy>(null);
   const [insights, setInsights] = useState<JobInsightSummary | null>(null);
   const [analytics, setAnalytics] = useState<OutcomeAnalytics | null>(null);
+  const [funnel, setFunnel] = useState<FunnelAnalytics | null>(null);
+  const [decisionInbox, setDecisionInbox] = useState<DecisionInbox | null>(null);
   const [detectorHealth, setDetectorHealth] = useState<DetectorHealth[]>([]);
   const [diagnostics, setDiagnostics] = useState<ExtensionDiagnostics | null>(null);
   const [discoveryInbox, setDiscoveryInbox] = useState<DiscoveryInboxSnapshot | null>(null);
   const [discoveryBusyId, setDiscoveryBusyId] = useState<string | null>(null);
   const [showInsights, setShowInsights] = useState(false);
+  const [showDecisions, setShowDecisions] = useState(false);
   const [showDiscovery, setShowDiscovery] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [showManual, setShowManual] = useState(false);
@@ -46,12 +51,16 @@ export default function App() {
   };
 
   const loadInsights = async () => {
-    const [insightsResult, analyticsResult] = await Promise.allSettled([
+    const [insightsResult, analyticsResult, funnelResult, decisionsResult] = await Promise.allSettled([
       sendGatewayRequest({ action: 'get-insights' }),
       sendGatewayRequest({ action: 'get-outcome-analytics' }),
+      sendGatewayRequest({ action: 'get-funnel-analytics' }),
+      sendGatewayRequest({ action: 'get-decision-inbox' }),
     ]);
     setInsights(insightsResult.status === 'fulfilled' ? insightsResult.value : null);
     setAnalytics(analyticsResult.status === 'fulfilled' ? analyticsResult.value : null);
+    setFunnel(funnelResult.status === 'fulfilled' ? funnelResult.value : null);
+    setDecisionInbox(decisionsResult.status === 'fulfilled' ? decisionsResult.value : null);
   };
 
   const loadDiagnostics = async () => {
@@ -78,6 +87,7 @@ export default function App() {
     if (window.location.hash === '#discovery') setShowDiscovery(true);
     return subscribeGateway((event) => {
       if (event.type === 'discovery-changed') void loadDiscoveryInbox();
+      if (event.type === 'decisions-changed' || event.type === 'policy-changed') void loadInsights();
     });
   }, []);
 
@@ -242,7 +252,7 @@ export default function App() {
       await loadInsights();
       setBackupDraft(null);
       const issueNote = result.issues.length ? ` ${result.issues.length} record warning${result.issues.length === 1 ? '' : 's'} were recorded.` : '';
-      showNotice(`Imported ${result.imported}, replaced ${result.replaced}, skipped ${result.skipped}; restored ${result.eventsImported} events and ${result.followUpsImported} follow-ups.${issueNote}`);
+      showNotice(`Imported ${result.imported}, replaced ${result.replaced}, skipped ${result.skipped}; restored ${result.eventsImported} events, ${result.followUpsImported} follow-ups, ${result.claimsImported} claims, and ${result.dossiersImported} application records.${issueNote}`);
     } catch (reason) {
       showNotice(reason instanceof Error ? reason.message : 'Could not import the backup.', 'error');
     } finally {
@@ -279,9 +289,11 @@ export default function App() {
         onImportJson={handleImportFile}
         onAddManual={() => setShowManual(true)}
         onShowInsights={() => setShowInsights(true)}
+        onShowDecisions={() => setShowDecisions(true)}
         onShowDiscovery={() => { setShowDiscovery(true); void loadDiscoveryInbox(); }}
         onShowDiagnostics={() => { setShowDiagnostics(true); void loadDiagnostics(); }}
         discoveryCount={discoveryInbox?.newCount || 0}
+        decisionCount={(decisionInbox?.items || []).filter((item) => item.state === 'new').length}
       />
 
       <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
@@ -301,8 +313,9 @@ export default function App() {
         </div>
       )}
 
-      {selectedJob && <JobDetailsDrawer job={selectedJob} onClose={() => setSelectedJobId(null)} onMove={handleMove} onDelete={handleDelete} onEvaluate={handleEvaluate} onUpdateNotes={handleNotes} onRecordOutcome={handleOutcome} evaluationBusy={evaluationBusy} />}
-      {showInsights && <InsightsDialog insights={insights} analytics={analytics} onClose={() => setShowInsights(false)} />}
+      {selectedJob && <JobDetailsDrawer job={selectedJob} onClose={() => setSelectedJobId(null)} onMove={handleMove} onDelete={handleDelete} onEvaluate={handleEvaluate} onUpdateNotes={handleNotes} onRecordOutcome={handleOutcome} evaluationBusy={evaluationBusy} onError={(message) => showNotice(message, 'error')} />}
+      {showInsights && <InsightsDialog insights={insights} analytics={analytics} funnel={funnel} onClose={() => setShowInsights(false)} />}
+      {showDecisions && <DecisionDialog onClose={() => setShowDecisions(false)} onError={(message) => showNotice(message, 'error')} onNotice={(message) => showNotice(message)} />}
       {showDiscovery && <DiscoveryInboxDialog inbox={discoveryInbox} busyId={discoveryBusyId} onClose={() => setShowDiscovery(false)} onSave={handleDiscoverySave} onDismiss={handleDiscoveryDismiss} onRevisit={handleDiscoveryRevisit} />}
       {showDiagnostics && <DiagnosticsDialog diagnostics={diagnostics} health={detectorHealth} onClose={() => setShowDiagnostics(false)} onRefresh={loadDiagnostics} />}
       {showManual && <ManualDialog onClose={() => setShowManual(false)} onSubmit={submitManual} />}
@@ -315,9 +328,9 @@ function FilterSelect({ label, value, onChange, options }: { label: string; valu
   return <label className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><span>{label}</span><select value={value} onChange={(event) => onChange(event.target.value)} className="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-indigo-400">{options.map(([key, text]) => <option key={key} value={key}>{text}</option>)}</select></label>;
 }
 
-function InsightsDialog({ insights, analytics, onClose }: { insights: JobInsightSummary | null; analytics: OutcomeAnalytics | null; onClose: () => void }) {
+function InsightsDialog({ insights, analytics, funnel, onClose }: { insights: JobInsightSummary | null; analytics: OutcomeAnalytics | null; funnel: FunnelAnalytics | null; onClose: () => void }) {
   const calibration = analytics?.calibration;
-  return <Dialog title="Search insights" onClose={onClose}><div className="grid gap-3 sm:grid-cols-3"><Metric label="Active jobs" value={insights?.activeJobs ?? 0} /><Metric label="Average fit" value={insights?.averageFit ?? '—'} /><Metric label="Evaluated" value={insights?.evaluatedJobs ?? 0} /><Metric label="Average opportunity" value={insights?.averageOpportunity ?? '—'} /><Metric label="Average safety" value={insights?.averageSafety ?? '—'} /><Metric label="Sources" value={insights ? Object.keys(insights.sourceCounts).length : 0} /></div><div className="mt-5 grid gap-4 sm:grid-cols-2"><List title="Most common skill gaps" values={insights?.topGaps || []} empty="No recurring gaps yet." /><List title="Risk signals" values={insights?.topFlags || []} empty="No recurring risk signals." /></div>{insights && <div className="mt-5"><h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Pipeline</h3><div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">{Object.entries(insights.stageCounts).map(([stage, count]) => <div key={stage} className="rounded-lg bg-slate-50 px-3 py-2 text-xs"><span className="capitalize text-slate-500">{stage.replace('_', ' ')}</span><strong className="ml-2 text-slate-900">{count}</strong></div>)}</div></div>}{analytics && <div className="mt-5 border-t border-slate-200 pt-5"><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Outcome analytics & calibration</h3><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${calibration?.status === 'ready' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{calibration?.status === 'ready' ? 'Directional sample ready' : 'Insufficient sample'}</span></div><div className="mt-3 grid gap-3 sm:grid-cols-4"><Metric label="Outcomes" value={analytics.jobsWithOutcome} /><Metric label="Positive" value={analytics.positiveOutcomeCount} /><Metric label="Negative" value={analytics.negativeOutcomeCount} /><Metric label="Pending" value={analytics.pendingOutcomeCount} /></div><p className="mt-3 text-xs leading-5 text-slate-500">{calibration?.message}</p><div className="mt-3 overflow-hidden rounded-xl border border-slate-200"><table className="w-full text-left text-[10px]"><thead className="bg-slate-50 text-slate-500"><tr><th className="px-2 py-2">Local score</th><th className="px-2 py-2">Samples</th><th className="px-2 py-2">Observed positive</th><th className="px-2 py-2">Predicted</th></tr></thead><tbody>{calibration?.buckets.map((bucket) => <tr key={bucket.id} className="border-t border-slate-100"><td className="px-2 py-2 font-semibold">{bucket.label}</td><td className="px-2 py-2">{bucket.samples}</td><td className="px-2 py-2">{bucket.observedPositiveRate === null ? '—' : `${Math.round(bucket.observedPositiveRate * 100)}%`}</td><td className="px-2 py-2">{Math.round(bucket.predictedPositiveRate * 100)}%</td></tr>)}</tbody></table></div>{calibration?.status === 'ready' && <p className="mt-2 text-[11px] text-slate-600">Observed positive rate: {calibration.observedPositiveRate === null ? '—' : `${Math.round(calibration.observedPositiveRate * 100)}%`} · Brier score: {calibration.brierScore ?? '—'} · Suggested review adjustment: {calibration.suggestedScoreAdjustment ?? 0} (never auto-applied).</p>}</div>}</Dialog>;
+  return <Dialog title="Search insights" onClose={onClose}><div className="grid gap-3 sm:grid-cols-3"><Metric label="Active jobs" value={insights?.activeJobs ?? 0} /><Metric label="Average fit" value={insights?.averageFit ?? '—'} /><Metric label="Evaluated" value={insights?.evaluatedJobs ?? 0} /><Metric label="Average opportunity" value={insights?.averageOpportunity ?? '—'} /><Metric label="Average safety" value={insights?.averageSafety ?? '—'} /><Metric label="Sources" value={insights ? Object.keys(insights.sourceCounts).length : 0} /></div><div className="mt-5 grid gap-4 sm:grid-cols-2"><List title="Most common skill gaps" values={insights?.topGaps || []} empty="No recurring gaps yet." /><List title="Risk signals" values={insights?.topFlags || []} empty="No recurring risk signals." />      </div>{insights && <div className="mt-5"><h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Pipeline</h3><div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">{Object.entries(insights.stageCounts).map(([stage, count]) => <div key={stage} className="rounded-lg bg-slate-50 px-3 py-2 text-xs"><span className="capitalize text-slate-500">{stage.replace('_', ' ')}</span><strong className="ml-2 text-slate-900">{count}</strong></div>)}</div></div>}{funnel && <div className="mt-5 border-t border-slate-200 pt-5"><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Funnel &amp; channel yield</h3><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${funnel.status === 'ready' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{funnel.status === 'ready' ? 'Directional sample ready' : `Needs ${funnel.minimumSampleSize - funnel.sampleSize} more decided`}</span></div><p className="mt-2 text-xs leading-5 text-slate-500">{funnel.message}</p><p className="mt-1 text-xs leading-5 text-slate-500">{funnel.inFlightNote}</p><div className="mt-3 grid gap-3 sm:grid-cols-4"><Metric label="Decided" value={funnel.sampleSize} /><Metric label="Median to apply" value={funnel.timing.medianDaysToApply === null ? '—' : `${funnel.timing.medianDaysToApply}d`} /><Metric label="Median to response" value={funnel.timing.medianDaysToResponse === null ? '—' : `${funnel.timing.medianDaysToResponse}d`} /><Metric label="Open follow-ups" value={funnel.followUps.open} /></div>{funnel.channels.length > 0 && <div className="mt-3 overflow-hidden rounded-xl border border-slate-200"><table className="w-full text-left text-[10px]"><thead className="bg-slate-50 text-slate-500"><tr><th className="px-2 py-2">Channel</th><th className="px-2 py-2">Clipped</th><th className="px-2 py-2">Applied</th><th className="px-2 py-2">Response</th><th className="px-2 py-2">Interview</th><th className="px-2 py-2">Offer</th><th className="px-2 py-2">In flight</th></tr></thead><tbody>{funnel.channels.map((channel) => <tr key={channel.channel} className="border-t border-slate-100"><td className="px-2 py-2 font-semibold capitalize">{channel.channel}</td><td className="px-2 py-2">{channel.clipped}</td><td className="px-2 py-2">{channel.applied}</td><td className="px-2 py-2">{channel.responseRate === null ? '—' : `${Math.round(channel.responseRate * 100)}%`}</td><td className="px-2 py-2">{channel.interviewRate === null ? '—' : `${Math.round(channel.interviewRate * 100)}%`}</td><td className="px-2 py-2">{channel.offerRate === null ? '—' : `${Math.round(channel.offerRate * 100)}%`}</td><td className="px-2 py-2">{channel.inFlight}</td></tr>)}</tbody></table></div>}{funnel.status !== 'ready' && <p className="mt-2 text-[11px] text-slate-500">Rates stay blank until the sample floor is met so a handful of applications never looks like a pattern.</p>}</div>}{analytics && <div className="mt-5 border-t border-slate-200 pt-5"><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">Outcome analytics & calibration</h3><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${calibration?.status === 'ready' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{calibration?.status === 'ready' ? 'Directional sample ready' : 'Insufficient sample'}</span></div><div className="mt-3 grid gap-3 sm:grid-cols-4"><Metric label="Outcomes" value={analytics.jobsWithOutcome} /><Metric label="Positive" value={analytics.positiveOutcomeCount} /><Metric label="Negative" value={analytics.negativeOutcomeCount} /><Metric label="Pending" value={analytics.pendingOutcomeCount} /></div><p className="mt-3 text-xs leading-5 text-slate-500">{calibration?.message}</p><div className="mt-3 overflow-hidden rounded-xl border border-slate-200"><table className="w-full text-left text-[10px]"><thead className="bg-slate-50 text-slate-500"><tr><th className="px-2 py-2">Local score</th><th className="px-2 py-2">Samples</th><th className="px-2 py-2">Observed positive</th><th className="px-2 py-2">Predicted</th></tr></thead><tbody>{calibration?.buckets.map((bucket) => <tr key={bucket.id} className="border-t border-slate-100"><td className="px-2 py-2 font-semibold">{bucket.label}</td><td className="px-2 py-2">{bucket.samples}</td><td className="px-2 py-2">{bucket.observedPositiveRate === null ? '—' : `${Math.round(bucket.observedPositiveRate * 100)}%`}</td><td className="px-2 py-2">{Math.round(bucket.predictedPositiveRate * 100)}%</td></tr>)}</tbody></table></div>{calibration?.status === 'ready' && <p className="mt-2 text-[11px] text-slate-600">Observed positive rate: {calibration.observedPositiveRate === null ? '—' : `${Math.round(calibration.observedPositiveRate * 100)}%`} · Brier score: {calibration.brierScore ?? '—'} · Suggested review adjustment: {calibration.suggestedScoreAdjustment ?? 0} (never auto-applied).</p>}</div>}</Dialog>;
 }
 
 function DiscoveryInboxDialog({ inbox, busyId, onClose, onSave, onDismiss, onRevisit }: { inbox: DiscoveryInboxSnapshot | null; busyId: string | null; onClose: () => void; onSave: (id: string) => Promise<void>; onDismiss: (id: string) => Promise<void>; onRevisit: (id: string) => Promise<void> }) {
@@ -393,7 +406,7 @@ function ManualDialog({ onClose, onSubmit }: { onClose: () => void; onSubmit: (d
 
 function BackupDialog({ draft, busy, onClose, onConfirm }: { draft: BackupDraft; busy: boolean; onClose: () => void; onConfirm: (strategy: BackupConflictStrategy) => Promise<void> }) {
   const { preview } = draft;
-  return <Dialog title="Review backup before restore" onClose={onClose}><div className="grid gap-3 sm:grid-cols-4"><Metric label="Jobs" value={preview.jobCount} /><Metric label="Events" value={preview.eventCount} /><Metric label="Follow-ups" value={preview.followUpCount} /><Metric label="Conflicts" value={preview.conflictCount} /></div><p className="mt-4 text-sm leading-6 text-slate-600">This backup uses schema v{preview.schemaVersion}. {preview.hasProfile ? 'Candidate profile settings will be restored.' : 'No profile settings were included.'} {preview.hasPreferences ? 'Evaluation preferences will be restored.' : 'No evaluation preferences were included.'}</p>{preview.issues.length > 0 && <details className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><summary className="cursor-pointer font-semibold">{preview.issues.length} record warning(s)</summary><ul className="mt-2 list-disc pl-5">{preview.issues.slice(0, 12).map((issue, index) => <li key={`${issue.index}-${index}`}>{issue.reason}</li>)}</ul></details>}<div className="mt-6 flex flex-wrap justify-end gap-2"><button type="button" onClick={onClose} disabled={busy} className="cursor-pointer rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 disabled:opacity-50">Cancel</button><button type="button" onClick={() => void onConfirm('skip')} disabled={busy} className="cursor-pointer rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800 disabled:opacity-50">Skip conflicts</button><button type="button" onClick={() => void onConfirm('overwrite')} disabled={busy} className="cursor-pointer rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{busy ? 'Restoring…' : 'Overwrite conflicts'}</button></div></Dialog>;
+  return <Dialog title="Review backup before restore" onClose={onClose}><div className="grid gap-3 sm:grid-cols-4"><Metric label="Jobs" value={preview.jobCount} /><Metric label="Events" value={preview.eventCount} /><Metric label="Follow-ups" value={preview.followUpCount} /><Metric label="Conflicts" value={preview.conflictCount} /></div>{(preview.claimCount > 0 || preview.dossierCount > 0 || preview.decisionCount > 0 || preview.policyOverrideCount > 0) && <div className="mt-3 grid gap-3 sm:grid-cols-4"><Metric label="Claims" value={preview.claimCount} /><Metric label="Application records" value={preview.dossierCount} /><Metric label="Decisions" value={preview.decisionCount} /><Metric label="Gate overrides" value={preview.policyOverrideCount} /></div>}<p className="mt-4 text-sm leading-6 text-slate-600">This backup uses schema v{preview.schemaVersion}. {preview.hasProfile ? 'Candidate profile settings will be restored.' : 'No profile settings were included.'} {preview.hasPreferences ? 'Evaluation preferences will be restored.' : 'No evaluation preferences were included.'} {preview.hasPolicyConstraints ? 'Workflow constraints will be restored.' : 'No workflow constraints were included.'}</p>{preview.issues.length > 0 && <details className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><summary className="cursor-pointer font-semibold">{preview.issues.length} record warning(s)</summary><ul className="mt-2 list-disc pl-5">{preview.issues.slice(0, 12).map((issue, index) => <li key={`${issue.index}-${index}`}>{issue.reason}</li>)}</ul></details>}<div className="mt-6 flex flex-wrap justify-end gap-2"><button type="button" onClick={onClose} disabled={busy} className="cursor-pointer rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 disabled:opacity-50">Cancel</button><button type="button" onClick={() => void onConfirm('skip')} disabled={busy} className="cursor-pointer rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800 disabled:opacity-50">Skip conflicts</button><button type="button" onClick={() => void onConfirm('overwrite')} disabled={busy} className="cursor-pointer rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{busy ? 'Restoring…' : 'Overwrite conflicts'}</button></div></Dialog>;
 }
 
 type ManualDraft = { title: string; company: string; location: string; salary: string; jobUrl: string; description: string };

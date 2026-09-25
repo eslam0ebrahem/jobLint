@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { sendGatewayRequest } from '@/src/lib/gateway';
 import { DEFAULT_PREFERENCES, type Profile, type UserPreferences } from '@/src/types/job';
+import { ClaimLedgerSection } from './components/ClaimLedgerSection';
+import { PolicyConstraintsSection } from './components/PolicyConstraintsSection';
 
 const FIELDS = [
   { key: 'name', label: 'Full name', ph: 'Alex Doe', type: 'text' },
@@ -153,6 +155,8 @@ export default function App() {
           </div>
         </section>
 
+        <ClaimLedgerSection onError={(message) => setErrors([message])} />
+
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-base font-bold text-slate-900">Score weighting</h2>
           <p className="mt-1 text-xs text-slate-500">Safety always retains a 15% minimum contribution; these controls weight fit versus opportunity.</p>
@@ -183,10 +187,12 @@ export default function App() {
           </fieldset>
         </section>
 
+        <PolicyConstraintsSection onSaved={(message) => setNotice(message)} onError={(message) => setErrors([message])} />
+
         <section className="rounded-2xl border border-sky-200 bg-sky-50 p-5 text-sm leading-6 text-sky-950">
           <h2 className="font-bold">Privacy boundary</h2>
           <p className="mt-1">
-            Jobs, evaluations, notes, and event history are stored in this browser&apos;s IndexedDB. Profile fields and scoring preferences are stored in <code>browser.storage.local</code>. Neither is uploaded by JobLint.
+            Jobs, evaluations, notes, and event history are stored in this browser&apos;s IndexedDB. Profile fields, scoring preferences, and workflow constraints are stored in <code>browser.storage.local</code>. The claim ledger lives in IndexedDB alongside your jobs. None of it is uploaded by JobLint.
           </p>
           <p className="mt-1">AI is separate and opt-in. If you explicitly enable AI review, only the job text needed for that request is sent directly to the endpoint you configure.</p>
         </section>

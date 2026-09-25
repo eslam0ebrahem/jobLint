@@ -48,6 +48,24 @@ async function readCurrentSchema(): Promise<{ version: number; stores: string[];
   });
 }
 
+async function readNewStoreIndexes(): Promise<{ claims: string[]; dossiers: string[]; decisions: string[]; policyOverrides: string[] }> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('joblint-db');
+    request.onsuccess = () => {
+      const database = request.result;
+      const transaction = database.transaction(['claims', 'dossiers', 'decisions', 'policyOverrides'], 'readonly');
+      resolve({
+        claims: [...transaction.objectStore('claims').indexNames].sort(),
+        dossiers: [...transaction.objectStore('dossiers').indexNames].sort(),
+        decisions: [...transaction.objectStore('decisions').indexNames].sort(),
+        policyOverrides: [...transaction.objectStore('policyOverrides').indexNames].sort(),
+      });
+      database.close();
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
 describe('IndexedDB repository', () => {
   it('deduplicates by identity and returns newest first', async () => {
     const first = await saveJob({ source: 'linkedin', jobId: 'one', title: 'Engineer', company: 'Acme', jobUrl: 'https://www.linkedin.com/jobs/view/one' });
@@ -71,11 +89,17 @@ describe('IndexedDB repository', () => {
     expect(job.updatedAt).toBeTruthy();
     expect(await getEvents(job.id)).toEqual([]);
     expect(await readCurrentSchema()).toEqual({
-      version: 8,
-      stores: ['discovery', 'events', 'followUps', 'jobs'],
+      version: 9,
+      stores: ['claims', 'decisions', 'discovery', 'dossiers', 'events', 'followUps', 'jobs', 'policyOverrides'],
       indexes: ['by-status', 'by-updated'],
       discoveryIndexes: ['by-identity', 'by-source', 'by-status', 'by-updated'],
       followUpIndexes: ['by-due', 'by-job', 'by-status'],
+    });
+    expect(await readNewStoreIndexes()).toEqual({
+      claims: ['by-kind', 'by-status', 'by-updated'],
+      dossiers: ['by-job', 'by-status', 'by-updated'],
+      decisions: ['by-state', 'by-updated'],
+      policyOverrides: ['by-job'],
     });
   });
 

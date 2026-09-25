@@ -16,7 +16,11 @@ import type { ExtensionDiagnostics } from '@/src/domain/diagnostics';
 import type { DiscoveryInboxSnapshot, DiscoveryRecord, DiscoverySaveResult } from '@/src/types/discovery';
 import type { FollowUp, FollowUpKind, FollowUpStatus } from '@/src/types/job';
 import type { ApplicationPacket } from '@/src/types/packet';
-import type { OutcomeAnalytics } from '@/src/types/analytics';
+import type { FunnelAnalytics, OutcomeAnalytics } from '@/src/types/analytics';
+import type { CandidateClaim, CandidateClaimInput, ClaimLedgerSnapshot, ClaimStatus, RequirementEvidence } from '@/src/types/claims';
+import type { DecisionInbox, DecisionState, JobComparison, JobDecision } from '@/src/types/decisions';
+import type { ApplicationDossier, DossierAnswerInput, DossierArtifactInput, DossierStatus } from '@/src/types/dossier';
+import type { PolicyCode, PolicyConstraints, PolicyReport } from '@/src/types/policy';
 import type {
   BackupConflictStrategy,
   BackupImportResult,
@@ -59,6 +63,30 @@ export type GatewayRequest =
   | { action: 'delete-follow-up'; id: string }
   | { action: 'get-application-packet'; id: string }
   | { action: 'get-outcome-analytics' }
+  | { action: 'get-funnel-analytics' }
+  | { action: 'list-claims'; kind?: string; status?: string }
+  | { action: 'save-claim'; claim: CandidateClaimInput }
+  | { action: 'set-claim-status'; id: string; status: ClaimStatus }
+  | { action: 'delete-claim'; id: string }
+  | { action: 'get-job-requirements'; id: string }
+  | { action: 'get-policy-report'; id: string }
+  | { action: 'override-policy-gate'; jobId: string; code: PolicyCode; level?: string; note?: string }
+  | { action: 'clear-policy-override'; id: string; code: PolicyCode }
+  | { action: 'get-policy-constraints' }
+  | { action: 'save-policy-constraints'; constraints: PolicyConstraints }
+  | { action: 'list-dossiers'; jobId?: string }
+  | { action: 'get-dossier'; id: string }
+  | { action: 'open-dossier'; id: string }
+  | { action: 'save-dossier-answer'; id: string; answer: DossierAnswerInput }
+  | { action: 'remove-dossier-answer'; id: string; answerId: string }
+  | { action: 'save-dossier-artifact'; id: string; artifact: DossierArtifactInput }
+  | { action: 'remove-dossier-artifact'; id: string; artifactId: string }
+  | { action: 'set-dossier-status'; id: string; status: DossierStatus }
+  | { action: 'delete-dossier'; id: string }
+  | { action: 'get-decision-inbox' }
+  | { action: 'save-decision'; jobId: string; state?: DecisionState; rationale?: string; nextAction?: string }
+  | { action: 'clear-decision'; id: string }
+  | { action: 'compare-jobs'; ids: string[] }
   | { action: 'get-profile' }
   | { action: 'save-profile'; profile: Profile }
   | { action: 'clear-profile' }
@@ -80,7 +108,11 @@ export type GatewayEvent =
   | { type: 'preferences-changed' }
   | { type: 'ai-config-changed' }
   | { type: 'discovery-changed'; reason: string }
-  | { type: 'follow-ups-changed'; reason: string };
+  | { type: 'follow-ups-changed'; reason: string }
+  | { type: 'claims-changed'; reason: string }
+  | { type: 'policy-changed'; jobId?: string }
+  | { type: 'dossiers-changed'; jobId: string }
+  | { type: 'decisions-changed'; jobId: string };
 
 export type GatewayResponse<T = unknown> =
   | { ok: true; data: T }
@@ -116,6 +148,30 @@ export type GatewayData = {
   'delete-follow-up': true;
   'get-application-packet': ApplicationPacket;
   'get-outcome-analytics': OutcomeAnalytics;
+  'get-funnel-analytics': FunnelAnalytics;
+  'list-claims': ClaimLedgerSnapshot;
+  'save-claim': CandidateClaim;
+  'set-claim-status': CandidateClaim;
+  'delete-claim': true;
+  'get-job-requirements': RequirementEvidence[];
+  'get-policy-report': PolicyReport;
+  'override-policy-gate': PolicyReport;
+  'clear-policy-override': PolicyReport;
+  'get-policy-constraints': PolicyConstraints;
+  'save-policy-constraints': PolicyConstraints;
+  'list-dossiers': ApplicationDossier[];
+  'get-dossier': ApplicationDossier;
+  'open-dossier': ApplicationDossier;
+  'save-dossier-answer': ApplicationDossier;
+  'remove-dossier-answer': ApplicationDossier;
+  'save-dossier-artifact': ApplicationDossier;
+  'remove-dossier-artifact': ApplicationDossier;
+  'set-dossier-status': ApplicationDossier;
+  'delete-dossier': true;
+  'get-decision-inbox': DecisionInbox;
+  'save-decision': JobDecision;
+  'clear-decision': true;
+  'compare-jobs': JobComparison;
   'get-profile': Profile;
   'save-profile': Profile;
   'clear-profile': true;
@@ -153,6 +209,7 @@ export function isGatewayRequest(value: unknown): value is GatewayRequest {
     case 'scan-discovery-jobs':
     case 'list-discovery':
     case 'get-outcome-analytics':
+    case 'get-funnel-analytics':
     case 'get-profile':
     case 'clear-profile':
     case 'get-preferences':
@@ -160,6 +217,9 @@ export function isGatewayRequest(value: unknown): value is GatewayRequest {
     case 'clear-ai-config':
     case 'export-backup':
     case 'open-dashboard':
+    case 'list-claims':
+    case 'get-policy-constraints':
+    case 'get-decision-inbox':
       return true;
     case 'get-job':
     case 'move-job':
@@ -172,6 +232,16 @@ export function isGatewayRequest(value: unknown): value is GatewayRequest {
     case 'save-discovery':
     case 'dismiss-discovery':
     case 'revisit-discovery':
+    case 'delete-claim':
+    case 'get-job-requirements':
+    case 'get-policy-report':
+    case 'get-dossier':
+    case 'open-dossier':
+    case 'remove-dossier-answer':
+    case 'remove-dossier-artifact':
+    case 'set-dossier-status':
+    case 'delete-dossier':
+    case 'clear-decision':
       return hasId;
     case 'clip-job':
     case 'save-job':
@@ -189,6 +259,26 @@ export function isGatewayRequest(value: unknown): value is GatewayRequest {
       return typeof value.jobId === 'string' && typeof value.title === 'string' && typeof value.dueAt === 'string';
     case 'update-follow-up':
       return hasId;
+    case 'save-claim':
+      return isRecord(value.claim) && typeof value.claim.label === 'string' && value.claim.label.length > 0;
+    case 'set-claim-status':
+      return hasId && typeof value.status === 'string';
+    case 'save-policy-constraints':
+      return isRecord(value.constraints);
+    case 'save-dossier-answer':
+      return hasId && isRecord(value.answer) && typeof value.answer.question === 'string';
+    case 'save-dossier-artifact':
+      return hasId && isRecord(value.artifact);
+    case 'compare-jobs':
+      return Array.isArray(value.ids) && value.ids.length >= 2 && value.ids.every((id) => typeof id === 'string' && id.length > 0);
+    case 'save-decision':
+      return typeof value.jobId === 'string' && value.jobId.length > 0;
+    case 'override-policy-gate':
+      return typeof value.jobId === 'string' && value.jobId.length > 0 && typeof value.code === 'string';
+    case 'clear-policy-override':
+      return hasId && typeof value.code === 'string';
+    case 'list-dossiers':
+      return value.jobId === undefined || typeof value.jobId === 'string';
     case 'save-profile':
       return isRecord(value.profile);
     case 'save-preferences':

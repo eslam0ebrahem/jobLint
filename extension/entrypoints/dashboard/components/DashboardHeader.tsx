@@ -11,10 +11,12 @@ interface Props {
   onShowInsights: () => void;
   onShowDiscovery: () => void;
   onShowDiagnostics: () => void;
+  onShowDecisions: () => void;
   discoveryCount: number;
+  decisionCount: number;
 }
 
-export function DashboardHeader({ totalJobs, search, onSearchChange, onExportCsv, onExportJson, onImportJson, onAddManual, onShowInsights, onShowDiscovery, onShowDiagnostics, discoveryCount }: Props) {
+export function DashboardHeader({ totalJobs, search, onSearchChange, onExportCsv, onExportJson, onImportJson, onAddManual, onShowInsights, onShowDiscovery, onShowDiagnostics, onShowDecisions, discoveryCount, decisionCount }: Props) {
   const [showMenu, setShowMenu] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,12 +41,13 @@ export function DashboardHeader({ totalJobs, search, onSearchChange, onExportCsv
         <input type="search" placeholder="Search title, company, location…" value={search} onChange={(event) => onSearchChange(event.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs outline-none transition focus:border-indigo-500 sm:w-56" />
         <button type="button" onClick={onAddManual} title="Add a job manually" className="shrink-0 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">+ Add</button>
         <button type="button" onClick={onShowDiscovery} title="Open the discovery inbox" className="shrink-0 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100">Inbox {discoveryCount > 0 && <span className="ml-1 rounded-full bg-emerald-200 px-1.5 py-0.5 text-[10px]">{discoveryCount}</span>}</button>
+        <button type="button" onClick={onShowDecisions} title="Review and compare your shortlist" className="shrink-0 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">Decide {decisionCount > 0 && <span className="ml-1 rounded-full bg-indigo-200 px-1.5 py-0.5 text-[10px]">{decisionCount}</span>}</button>
         <button type="button" onClick={onShowInsights} title="Open search insights" className="shrink-0 rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200">Insights</button>
         <div className="relative">
           <button type="button" onClick={(event) => { event.stopPropagation(); setShowMenu((current) => !current); }} className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200" aria-expanded={showMenu}>Data <span className="text-[10px] text-slate-400">▾</span></button>
           {showMenu && <div onClick={(event) => event.stopPropagation()} className="absolute right-0 z-50 mt-1.5 w-60 rounded-xl border border-slate-200 bg-white py-1.5 text-xs text-slate-700 shadow-xl">
             <MenuButton label="Export CSV" detail="Spreadsheet-ready job report" onClick={() => { onExportCsv(); setShowMenu(false); }} />
-            <MenuButton label="Download full backup" detail="Jobs, events, profile, preferences" onClick={() => { onExportJson(); setShowMenu(false); }} />
+            <MenuButton label="Download full backup" detail="Jobs, events, claims, dossiers, profile" onClick={() => { onExportJson(); setShowMenu(false); }} />
             <div className="my-1 border-t border-slate-100" />
             <MenuButton label="Review and restore JSON" detail="Preview conflicts before import" onClick={() => { fileInputRef.current?.click(); setShowMenu(false); }} />
             <MenuButton label="Detector diagnostics" detail="Check active supported tabs" onClick={() => { onShowDiagnostics(); setShowMenu(false); }} />

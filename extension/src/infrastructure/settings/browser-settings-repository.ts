@@ -1,8 +1,11 @@
 import type { Profile, UserPreferences } from '@/src/types/job';
+import type { PolicyConstraints } from '@/src/types/policy';
 import { normalizePreferences, normalizeProfile } from '@/src/domain/settings';
+import { normalizePolicyConstraints } from '@/src/domain/policy';
 
 const PROFILE_KEY = 'profile';
 const PREFERENCES_KEY = 'preferences';
+const POLICY_CONSTRAINTS_KEY = 'policyConstraints';
 
 export const browserSettingsRepository = {
   async readProfile(): Promise<unknown> {
@@ -21,6 +24,13 @@ export const browserSettingsRepository = {
   },
   async writePreferences(preferences: UserPreferences): Promise<void> {
     await browser.storage.local.set({ [PREFERENCES_KEY]: preferences });
+  },
+  async readPolicyConstraints(): Promise<unknown> {
+    const result = await browser.storage.local.get(POLICY_CONSTRAINTS_KEY);
+    return result[POLICY_CONSTRAINTS_KEY];
+  },
+  async writePolicyConstraints(constraints: PolicyConstraints): Promise<void> {
+    await browser.storage.local.set({ [POLICY_CONSTRAINTS_KEY]: constraints });
   },
 };
 
@@ -45,5 +55,15 @@ export async function getPreferences(): Promise<UserPreferences> {
 export async function savePreferences(preferences: UserPreferences): Promise<UserPreferences> {
   const normalized = normalizePreferences(preferences);
   await browserSettingsRepository.writePreferences(normalized);
+  return normalized;
+}
+
+export async function getPolicyConstraints(): Promise<PolicyConstraints> {
+  return normalizePolicyConstraints(await browserSettingsRepository.readPolicyConstraints());
+}
+
+export async function savePolicyConstraints(constraints: PolicyConstraints): Promise<PolicyConstraints> {
+  const normalized = normalizePolicyConstraints(constraints);
+  await browserSettingsRepository.writePolicyConstraints(normalized);
   return normalized;
 }

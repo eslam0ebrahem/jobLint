@@ -90,6 +90,12 @@ export interface DetectorHealth {
   company?: string;
 }
 
+/**
+ * How strongly the local claim ledger backs an evidence signal. Purely
+ * descriptive: it never feeds the score.
+ */
+export type ClaimSupport = 'verified' | 'asserted' | 'unbacked';
+
 export interface EvaluationEvidence {
   id: string;
   category: 'skill' | 'role' | 'location' | 'compensation' | 'risk' | 'profile';
@@ -97,6 +103,9 @@ export interface EvaluationEvidence {
   value?: string;
   detail?: string;
   confidence: number;
+  /** Candidate claims that back this signal, when the ledger was consulted. */
+  claimIds?: string[];
+  support?: ClaimSupport;
 }
 
 export interface EvaluationScoreBreakdown {
@@ -190,6 +199,14 @@ export interface ApplicationEvent {
     | 'follow_up_updated'
     | 'follow_up_completed'
     | 'follow_up_deleted'
+    | 'dossier_opened'
+    | 'dossier_submitted'
+    | 'dossier_closed'
+    | 'answer_recorded'
+    | 'artifact_attached'
+    | 'decision_recorded'
+    | 'policy_overridden'
+    | 'repost_detected'
     | 'imported';
   at: string;
   from?: Column;

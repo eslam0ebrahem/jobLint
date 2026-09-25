@@ -1,4 +1,6 @@
 import type { Profile, UserPreferences } from '@/src/types/job';
+import type { PolicyConstraints } from '@/src/types/policy';
+import { normalizePolicyConstraints } from '@/src/domain/policy';
 import { normalizePreferences, normalizeProfile } from '@/src/domain/settings';
 
 export interface SettingsRepository {
@@ -7,11 +9,14 @@ export interface SettingsRepository {
   deleteProfile(): Promise<void>;
   readPreferences(): Promise<unknown>;
   writePreferences(preferences: UserPreferences): Promise<void>;
+  readPolicyConstraints?(): Promise<unknown>;
+  writePolicyConstraints?(constraints: PolicyConstraints): Promise<void>;
 }
 
 export interface SettingsEvents {
   onProfileChanged?(): void;
   onPreferencesChanged?(): void;
+  onPolicyConstraintsChanged?(): void;
 }
 
 export interface SaveSettingsOptions {
@@ -48,6 +53,17 @@ export class SettingsService {
     const normalized = normalizePreferences(preferences);
     await this.repository.writePreferences(normalized);
     if (options.notify !== false) this.events.onPreferencesChanged?.();
+    return normalized;
+  }
+
+  async getPolicyConstraints(): Promise<PolicyConstraints> {
+    return normalizePolicyConstraints(await this.repository.readPolicyConstraints?.());
+  }
+
+  async savePolicyConstraints(constraints: PolicyConstraints, options: SaveSettingsOptions = {}): Promise<PolicyConstraints> {
+    const normalized = normalizePolicyConstraints(constraints);
+    if (this.repository.writePolicyConstraints) await this.repository.writePolicyConstraints(normalized);
+    if (options.notify !== false) this.events.onPolicyConstraintsChanged?.();
     return normalized;
   }
 }

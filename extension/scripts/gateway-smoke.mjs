@@ -144,6 +144,50 @@ const quickClip = await dispatch({
   job: { source: 'manual', title: 'Legacy Gateway Path', company: 'JobLint QA' },
 });
 const scan = await call({ action: 'scan-discovery-jobs' });
+const jobId = clipped.job.id;
+
+// Claim ledger, policy gates, dossier, and decisions all have to survive the
+// real background bundle, not just the unit tests.
+const claim = await call({ action: 'save-claim', claim: { kind: 'skill', label: 'TypeScript', status: 'verified', source: 'resume' } });
+const verifiedClaim = await call({ action: 'set-claim-status', id: claim.id, status: 'verified' });
+const ledger = await call({ action: 'list-claims' });
+const requirements = await call({ action: 'get-job-requirements', id: jobId });
+const constraints = await call({ action: 'save-policy-constraints', constraints: { doNotApplyCompanies: ['JobLint QA'], doNotApplyDomains: [], authorizedRegions: ['Remote'], minimumCompensation: null, stalePostingDays: 45, minEvaluationConfidence: 0.4 } });
+const blockedReport = await call({ action: 'get-policy-report', id: jobId });
+const overriddenReport = await call({ action: 'override-policy-gate', jobId, code: 'do_not_apply_company', level: 'caution', note: 'Smoke override' });
+const restoredReport = await call({ action: 'clear-policy-override', id: jobId, code: 'do_not_apply_company' });
+const dossier = await call({ action: 'open-dossier', id: jobId });
+const withAnswer = await call({ action: 'save-dossier-answer', id: dossier.id, answer: { question: 'Why this role?', answer: 'Because TypeScript.' } });
+const withArtifact = await call({ action: 'save-dossier-artifact', id: dossier.id, artifact: { kind: 'resume', label: 'Résumé 2026', reference: '~/resume.pdf', claimIds: [claim.id] } });
+const submittedDossier = await call({ action: 'set-dossier-status', id: dossier.id, status: 'submitted' });
+const dossiers = await call({ action: 'list-dossiers', jobId });
+const decision = await call({ action: 'save-decision', jobId, state: 'shortlisted', nextAction: 'Send résumé' });
+const inbox = await call({ action: 'get-decision-inbox' });
+const quickClipJobId = quickClip.job.id;
+const comparison = await call({ action: 'compare-jobs', ids: [jobId, quickClipJobId] });
+const funnel = await call({ action: 'get-funnel-analytics' });
+const citedPacket = await call({ action: 'get-application-packet', id: jobId });
+const firstEvaluation = clipped.job.evaluation;
+const reposted = await call({
+  action: 'clip-job',
+  job: {
+    source: 'manual',
+    title: 'Runtime Smoke Engineer',
+    company: 'JobLint QA',
+    description: 'Build TypeScript and React services with Node.js and AWS. This role is now on-call.',
+  },
+});
+const repostEvents = (await call({ action: 'get-events', jobId })).filter((event) => event.type === 'repost_detected');
+assert(reposted.isNew === false && reposted.job.id === jobId, 'Re-clipping a tracked posting created a duplicate.');
+assert(reposted.job.evaluation.createdAt > firstEvaluation.createdAt, 'The evaluation was not recomputed from the new text.');
+assert(reposted.job.description.includes('This role is now on-call.'), 'The re-captured posting text was not stored.');
+assert(repostEvents.length === 1 && repostEvents[0].metadata.contentChanged === true && repostEvents[0].metadata.fields === 'description', 'Repost detection failed to record the change.');
+const attributed = await call({ action: 'evaluate-job', id: jobId });
+const coverageSignal = attributed.evaluation.evidence.find((item) => item.id === 'claims');
+assert(coverageSignal && coverageSignal.claimIds.length > 0, 'The evaluator did not attribute evidence to the claim ledger.');
+const attributedPacket = await call({ action: 'get-application-packet', id: jobId });
+assert(attributedPacket.alignment.score === citedPacket.alignment.score, 'Claim attribution moved the score.');
+
 const [jobs, events, insights, diagnostics, profile, preferences, aiConfig, backup] = await Promise.all([
   call({ action: 'list-jobs' }),
   call({ action: 'get-events' }),
@@ -159,13 +203,15 @@ const schema = await new Promise((resolve, reject) => {
   const request = indexedDB.open('joblint-db');
   request.onsuccess = () => {
     const database = request.result;
-    const transaction = database.transaction(['jobs', 'discovery', 'followUps'], 'readonly');
+    const transaction = database.transaction(['jobs', 'discovery', 'followUps', 'claims', 'dossiers', 'decisions', 'policyOverrides'], 'readonly');
     resolve({
       version: database.version,
       stores: [...database.objectStoreNames],
       indexes: [...transaction.objectStore('jobs').indexNames],
       discoveryIndexes: [...transaction.objectStore('discovery').indexNames],
       followUpIndexes: [...transaction.objectStore('followUps').indexNames],
+      claimIndexes: [...transaction.objectStore('claims').indexNames],
+      dossierIndexes: [...transaction.objectStore('dossiers').indexNames],
     });
     database.close();
   };
@@ -178,20 +224,48 @@ assert(quickClip.isNew, 'Legacy quick-clip compatibility failed.');
 assert(jobs.length === 2 && insights.activeJobs === 2 && insights.evaluatedJobs === 2, 'Job listing or insights failed.');
 assert(events.filter((event) => event.type === 'clipped').length === 2, 'Clip events were not written.');
 assert(profile.roles === 'Smoke Engineer' && preferences.prioritizeFit === 0.6, 'Settings round-trip failed.');
-assert(backup.schemaVersion === 2 && backup.jobs.length === 2 && backup.events.length === 2, 'Backup export failed.');
-assert(preview.valid && preview.conflictCount === 2, 'Backup preview failed.');
+assert(backup.schemaVersion === 3 && backup.jobs.length === 2 && backup.events.length >= 2, 'Backup export failed.');
+assert(backup.events.filter((event) => event.type === 'clipped').length === 2, 'Backup export lost the clip events.');
+assert(backup.claims?.length === 1 && backup.dossiers?.length === 1 && backup.decisions?.length === 1, 'Backup export lost the evidence stores.');
+assert(preview.valid && preview.conflictCount === 2 && preview.claimCount === 1, 'Backup preview failed.');
 assert(scan.detectedCount === 2 && scan.addedCount === 2 && scan.newCount === 2, 'Discovery scan gateway failed.');
-assert(diagnostics.database.version === 8 && diagnostics.database.jobCount === 2 && diagnostics.database.eventCount === 2 && diagnostics.database.discoveryCount === 2 && diagnostics.database.followUpCount === 0, 'Diagnostics repository counts failed.');
+assert(verifiedClaim.status === 'verified' && ledger.claims.length === 1 && ledger.statusCounts.verified === 1, 'Claim ledger gateway failed.');
+assert(requirements.length > 0 && requirements.some((item) => item.status === 'covered'), 'Requirement coverage failed.');
+assert(constraints.doNotApplyCompanies.includes('JobLint QA'), 'Policy constraints gateway failed.');
+assert(blockedReport.blocked && blockedReport.level === 'block', 'Policy gate did not block an excluded company.');
+assert(!overriddenReport.blocked && overriddenReport.overridden === 1, 'Policy override was not recorded.');
+assert(restoredReport.blocked && restoredReport.overridden === 0, 'Policy override could not be restored.');
+assert(dossier.posting.contentHash && withAnswer.answers.length === 1 && submittedDossier.status === 'submitted', 'Dossier gateway failed.');
+assert(withArtifact.artifacts.length === 1 && withArtifact.artifacts[0].claimIds[0] === verifiedClaim.id, 'Dossier artifact provenance failed.');
+assert(dossiers.length === 1 && dossiers[0].id === dossier.id, 'Dossier listing failed.');
+assert(decision.state === 'shortlisted' && inbox.items.some((item) => item.jobId === jobId), 'Decision gateway failed.');
+assert(comparison.rows.length === 2 && comparison.basis.length > 0, 'Job comparison gateway failed.');
+assert(funnel.version === 1 && funnel.channels.length > 0, 'Funnel analytics gateway failed.');
+assert(citedPacket.version === 2 && citedPacket.claims.some((item) => item.label === 'TypeScript'), 'Packet did not cite the claim ledger.');
+const ledgerEvents = (await call({ action: 'get-events', jobId })).map((event) => event.type);
+for (const expected of ['dossier_opened', 'answer_recorded', 'artifact_attached', 'dossier_submitted', 'decision_recorded', 'policy_overridden']) {
+  assert(ledgerEvents.includes(expected), `The activity log never recorded ${expected}.`);
+}
+const overrideEvents = (await call({ action: 'get-events', jobId })).filter((event) => event.type === 'policy_overridden');
+assert(overrideEvents.length === 2 && overrideEvents.some((event) => event.metadata?.action === 'overridden') && overrideEvents.some((event) => event.metadata?.action === 'cleared'), 'Policy override audit trail is incomplete.');
+assert(diagnostics.database.version === 9 && diagnostics.database.jobCount === 2 && diagnostics.database.discoveryCount === 2 && diagnostics.database.followUpCount === 0, 'Diagnostics repository counts failed.');
+assert(diagnostics.database.eventCount >= 2, 'Diagnostics repository counts failed.');
+assert(diagnostics.database.claimCount === 1 && diagnostics.database.dossierCount === 1 && diagnostics.database.decisionCount === 1, 'Diagnostics evidence counts failed.');
 assert(diagnostics.storage.usage === 256 && diagnostics.storage.quota === 4096, 'Diagnostics storage usage failed.');
 assert(diagnostics.manifest.version === '1.0.0' && diagnostics.manifest.permissions.includes('storage'), 'Diagnostics manifest summary failed.');
 assert(diagnostics.ai.enabled === false && !JSON.stringify(diagnostics).includes('apiKey'), 'Diagnostics exposed AI configuration secrets.');
 assert(diagnostics.platforms.length === 2 && diagnostics.platforms.some((platform) => platform.source === 'linkedin'), 'Diagnostics platform summary failed.');
-assert(schema.version === 8 && schema.stores.includes('jobs') && schema.stores.includes('events') && schema.stores.includes('discovery') && schema.stores.includes('followUps'), 'IndexedDB schema changed.');
+assert(schema.version === 9 && schema.stores.includes('jobs') && schema.stores.includes('events') && schema.stores.includes('discovery') && schema.stores.includes('followUps'), 'IndexedDB schema changed.');
+assert(['claims', 'dossiers', 'decisions', 'policyOverrides'].every((store) => schema.stores.includes(store)), 'Evidence stores are missing.');
 assert(schema.indexes.includes('by-status') && schema.indexes.includes('by-updated'), 'Job indexes are incomplete.');
 assert(schema.discoveryIndexes.includes('by-identity') && schema.discoveryIndexes.includes('by-updated'), 'Discovery indexes are incomplete.');
 assert(schema.followUpIndexes.includes('by-job') && schema.followUpIndexes.includes('by-due'), 'Follow-up indexes are incomplete.');
+assert(schema.claimIndexes.includes('by-kind') && schema.claimIndexes.includes('by-status'), 'Claim indexes are incomplete.');
+assert(schema.dossierIndexes.includes('by-job') && schema.dossierIndexes.includes('by-status'), 'Dossier indexes are incomplete.');
 assert(networkCalls === 0, `Unexpected network calls: ${networkCalls}.`);
-assert(emitted.filter((event) => event?.type === 'job-updated').length === 2, 'Job delta events were not emitted exactly once per clip.');
+// Two original clips plus the deliberate re-clip above: one delta each, never a full reload.
+// Two original clips, the deliberate re-clip, and the re-evaluation: one delta each, never a full reload.
+assert(emitted.filter((event) => event?.type === 'job-updated').length === 4, 'Job delta events were not emitted exactly once per clip.');
 assert(!emitted.some((event) => event?.type === 'jobs-changed'), 'Job edits incorrectly requested a full list reload.');
 assert(listeners.message({ request: { action: 'invalid' } }, {}, () => {}) === false, 'Invalid requests were not rejected.');
 

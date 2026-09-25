@@ -1,3 +1,4 @@
+import type { ClaimKind, ClaimStatus, RequirementEvidence } from '@/src/types/claims';
 import type { Job, JobDeadline, JobEvaluation, Profile } from '@/src/types/job';
 
 export interface PacketJobSnapshot {
@@ -21,15 +22,32 @@ export interface PacketProfileSnapshot {
 
 export interface PacketEvidence {
   id: string;
-  source: 'job' | 'profile' | 'evaluation';
+  source: 'job' | 'profile' | 'evaluation' | 'claim';
   label: string;
   value?: string;
   detail?: string;
   confidence: number;
+  /** Set when the evidence is backed by a specific candidate claim. */
+  claimIds?: string[];
 }
 
+/** A claim cited by the packet, inlined so the export stays self-contained. */
+export interface PacketClaimReference {
+  claimId: string;
+  label: string;
+  kind: ClaimKind;
+  status: ClaimStatus;
+  reference?: string;
+}
+
+/**
+ * `not-configured` when the claim ledger is empty, so a profile-only user is
+ * never told their claims are unsupported.
+ */
+export type PacketClaimCoverage = 'not-configured' | 'none' | 'partial' | 'full';
+
 export interface ApplicationPacket {
-  version: 1;
+  version: 2;
   localOnly: true;
   generatedAt: string;
   job: PacketJobSnapshot;
@@ -42,6 +60,11 @@ export interface ApplicationPacket {
     missingSkills: string[];
     missingData: string[];
   };
+  claims: PacketClaimReference[];
+  claimCoverage: PacketClaimCoverage;
+  requirements: RequirementEvidence[];
+  /** Matched skills with no claim behind them; the packet will not assert them. */
+  unsupportedClaims: string[];
   talkingPoints: string[];
   questions: string[];
   checklist: string[];

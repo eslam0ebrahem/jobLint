@@ -21,6 +21,34 @@ describe('typed gateway contract', () => {
     expect(isGatewayRequest({ action: 'clip-job', job: { source: 'linkedin' } })).toBe(false);
   });
 
+  it('guards the claim, policy, dossier, and decision actions', () => {
+    expect(isGatewayRequest({ action: 'list-claims' })).toBe(true);
+    expect(isGatewayRequest({ action: 'save-claim', claim: { kind: 'skill', label: 'React' } })).toBe(true);
+    expect(isGatewayRequest({ action: 'save-claim', claim: { kind: 'skill' } })).toBe(false);
+    expect(isGatewayRequest({ action: 'set-claim-status', id: 'claim-1', status: 'verified' })).toBe(true);
+    expect(isGatewayRequest({ action: 'set-claim-status', status: 'verified' })).toBe(false);
+    expect(isGatewayRequest({ action: 'get-policy-report', id: 'job-1' })).toBe(true);
+    expect(isGatewayRequest({ action: 'get-policy-report' })).toBe(false);
+    expect(isGatewayRequest({ action: 'override-policy-gate', jobId: 'job-1', code: 'do_not_apply_company' })).toBe(true);
+    expect(isGatewayRequest({ action: 'override-policy-gate', code: 'do_not_apply_company' })).toBe(false);
+    expect(isGatewayRequest({ action: 'clear-policy-override', id: 'job-1', code: 'deadline_passed' })).toBe(true);
+    expect(isGatewayRequest({ action: 'clear-policy-override', id: 'job-1' })).toBe(false);
+    expect(isGatewayRequest({ action: 'save-policy-constraints', constraints: { doNotApplyCompanies: [] } })).toBe(true);
+    expect(isGatewayRequest({ action: 'open-dossier', id: 'job-1' })).toBe(true);
+    expect(isGatewayRequest({ action: 'save-dossier-answer', id: 'd-1', answer: { question: 'Why?' } })).toBe(true);
+    expect(isGatewayRequest({ action: 'save-dossier-answer', id: 'd-1', answer: {} })).toBe(false);
+    expect(isGatewayRequest({ action: 'remove-dossier-artifact', id: 'd-1', artifactId: 'a-1' })).toBe(true);
+    expect(isGatewayRequest({ action: 'compare-jobs', ids: ['job-1', 'job-2'] })).toBe(true);
+    expect(isGatewayRequest({ action: 'compare-jobs', ids: ['job-1'] })).toBe(false);
+    expect(isGatewayRequest({ action: 'save-decision', jobId: 'job-1', state: 'shortlisted' })).toBe(true);
+    expect(isGatewayRequest({ action: 'save-decision' })).toBe(false);
+    expect(isGatewayRequest({ action: 'get-funnel-analytics' })).toBe(true);
+    expect(isGatewayRequest({ action: 'get-decision-inbox' })).toBe(true);
+    expect(isGatewayRequest({ action: 'list-dossiers' })).toBe(true);
+    expect(isGatewayRequest({ action: 'list-dossiers', jobId: 'job-1' })).toBe(true);
+    expect(isGatewayRequest({ action: 'not-a-real-action' })).toBe(false);
+  });
+
   it('unwraps successful responses and surfaces background errors', async () => {
     const sendMessage = browser.runtime.sendMessage as unknown as ReturnType<typeof vi.fn>;
     sendMessage.mockResolvedValueOnce({ ok: true, data: [{ id: 'job-1' }] });

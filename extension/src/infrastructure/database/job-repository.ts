@@ -8,13 +8,17 @@ import type {
   Job,
   NewJob,
 } from '@/src/types/job';
+import type { CandidateClaim } from '@/src/types/claims';
+import type { ApplicationDossier } from '@/src/types/dossier';
+import type { JobDecision } from '@/src/types/decisions';
+import type { StoredPolicyOverride } from '@/src/types/policy';
 import { createJobIdentity, identityMatches } from '@/src/domain/identity';
 import { normalizeJob } from '@/src/domain/jobs';
 import { isApplicationOutcome, isColumn } from '@/src/domain/shared';
 import { normalizeEvaluation } from '@/src/lib/evaluation/normalize';
 
 export const DB_NAME = 'joblint-db';
-export const DB_VERSION = 8;
+export const DB_VERSION = 9;
 
 export interface JobLintDB extends DBSchema {
   jobs: {
@@ -50,6 +54,39 @@ export interface JobLintDB extends DBSchema {
       'by-job': string;
       'by-due': string;
       'by-status': string;
+    };
+  };
+  claims: {
+    key: string;
+    value: CandidateClaim;
+    indexes: {
+      'by-kind': string;
+      'by-status': string;
+      'by-updated': string;
+    };
+  };
+  dossiers: {
+    key: string;
+    value: ApplicationDossier;
+    indexes: {
+      'by-job': string;
+      'by-status': string;
+      'by-updated': string;
+    };
+  };
+  decisions: {
+    key: string;
+    value: JobDecision;
+    indexes: {
+      'by-state': string;
+      'by-updated': string;
+    };
+  };
+  policyOverrides: {
+    key: string;
+    value: StoredPolicyOverride;
+    indexes: {
+      'by-job': string;
     };
   };
 }
@@ -166,6 +203,44 @@ export function getDb(): Promise<IDBPDatabase<JobLintDB>> {
           if (!Array.from(store.indexNames).includes('by-job')) store.createIndex('by-job', 'jobId');
           if (!Array.from(store.indexNames).includes('by-due')) store.createIndex('by-due', 'dueAt');
           if (!Array.from(store.indexNames).includes('by-status')) store.createIndex('by-status', 'status');
+        }
+        if (!db.objectStoreNames.contains('claims')) {
+          const store = db.createObjectStore('claims', { keyPath: 'id' });
+          store.createIndex('by-kind', 'kind');
+          store.createIndex('by-status', 'status');
+          store.createIndex('by-updated', 'updatedAt');
+        } else {
+          const store = transaction.objectStore('claims');
+          if (!Array.from(store.indexNames).includes('by-kind')) store.createIndex('by-kind', 'kind');
+          if (!Array.from(store.indexNames).includes('by-status')) store.createIndex('by-status', 'status');
+          if (!Array.from(store.indexNames).includes('by-updated')) store.createIndex('by-updated', 'updatedAt');
+        }
+        if (!db.objectStoreNames.contains('dossiers')) {
+          const store = db.createObjectStore('dossiers', { keyPath: 'id' });
+          store.createIndex('by-job', 'jobId');
+          store.createIndex('by-status', 'status');
+          store.createIndex('by-updated', 'updatedAt');
+        } else {
+          const store = transaction.objectStore('dossiers');
+          if (!Array.from(store.indexNames).includes('by-job')) store.createIndex('by-job', 'jobId');
+          if (!Array.from(store.indexNames).includes('by-status')) store.createIndex('by-status', 'status');
+          if (!Array.from(store.indexNames).includes('by-updated')) store.createIndex('by-updated', 'updatedAt');
+        }
+        if (!db.objectStoreNames.contains('decisions')) {
+          const store = db.createObjectStore('decisions', { keyPath: 'id' });
+          store.createIndex('by-state', 'state');
+          store.createIndex('by-updated', 'updatedAt');
+        } else {
+          const store = transaction.objectStore('decisions');
+          if (!Array.from(store.indexNames).includes('by-state')) store.createIndex('by-state', 'state');
+          if (!Array.from(store.indexNames).includes('by-updated')) store.createIndex('by-updated', 'updatedAt');
+        }
+        if (!db.objectStoreNames.contains('policyOverrides')) {
+          const store = db.createObjectStore('policyOverrides', { keyPath: 'key' });
+          store.createIndex('by-job', 'jobId');
+        } else {
+          const store = transaction.objectStore('policyOverrides');
+          if (!Array.from(store.indexNames).includes('by-job')) store.createIndex('by-job', 'jobId');
         }
 
         // v1-v5 records were not actively repaired. Do that now, while the
@@ -302,10 +377,15 @@ export async function recordOutcome(id: string, outcome: ApplicationOutcome): Pr
 
 export async function deleteJob(id: string): Promise<void> {
   const db = await getDb();
-  const tx = db.transaction(['jobs', 'events'], 'readwrite');
+  const tx = db.transaction(['jobs', 'events', 'dossiers', 'decisions', 'policyOverrides'], 'readwrite');
   await tx.objectStore('jobs').delete(id);
   const eventKeys = await tx.objectStore('events').index('by-job').getAllKeys(id);
   await Promise.all(eventKeys.map((key) => tx.objectStore('events').delete(key)));
+  const dossierKeys = await tx.objectStore('dossiers').index('by-job').getAllKeys(id);
+  await Promise.all(dossierKeys.map((key) => tx.objectStore('dossiers').delete(key)));
+  const overrideKeys = await tx.objectStore('policyOverrides').index('by-job').getAllKeys(id);
+  await Promise.all(overrideKeys.map((key) => tx.objectStore('policyOverrides').delete(key)));
+  await tx.objectStore('decisions').delete(id);
   await tx.done;
 }
 
@@ -331,15 +411,40 @@ export async function saveEvents(events: WriteEvent[]): Promise<ApplicationEvent
   return saved;
 }
 
-export async function getRepositoryStats(): Promise<{ version: number; jobCount: number; eventCount: number; discoveryCount: number; followUpCount: number }> {
+export async function getRepositoryStats(): Promise<{
+  version: number;
+  jobCount: number;
+  eventCount: number;
+  discoveryCount: number;
+  followUpCount: number;
+  claimCount: number;
+  dossierCount: number;
+  decisionCount: number;
+  policyOverrideCount: number;
+}> {
   const db = await getDb();
-  const [jobCount, eventCount, discoveryCount, followUpCount] = await Promise.all([
-    db.count('jobs'),
-    db.count('events'),
-    db.count('discovery'),
-    db.count('followUps'),
-  ]);
-  return { version: db.version, jobCount, eventCount, discoveryCount, followUpCount };
+  const [jobCount, eventCount, discoveryCount, followUpCount, claimCount, dossierCount, decisionCount, policyOverrideCount] =
+    await Promise.all([
+      db.count('jobs'),
+      db.count('events'),
+      db.count('discovery'),
+      db.count('followUps'),
+      db.count('claims'),
+      db.count('dossiers'),
+      db.count('decisions'),
+      db.count('policyOverrides'),
+    ]);
+  return {
+    version: db.version,
+    jobCount,
+    eventCount,
+    discoveryCount,
+    followUpCount,
+    claimCount,
+    dossierCount,
+    decisionCount,
+    policyOverrideCount,
+  };
 }
 
 export const jobRepository = {
@@ -354,6 +459,7 @@ export const jobRepository = {
   recordOutcome,
   deleteJob,
   getEvents,
+  saveEvent,
   saveEvents,
   getRepositoryStats,
 };
