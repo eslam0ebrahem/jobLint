@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { sendGatewayRequest } from '@/src/lib/gateway';
+import { dossierGaps } from '@/src/domain/dossier';
 import type { ApplicationDossier, DossierStatus } from '@/src/types/dossier';
 import type { RequirementEvidence } from '@/src/types/claims';
 
@@ -29,8 +30,10 @@ export function DossierPanel({ jobId, onError }: Props) {
   const [answerText, setAnswerText] = useState('');
   const [artifactLabel, setArtifactLabel] = useState('Résumé');
   const [artifactReference, setArtifactReference] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const current = dossiers[0] || null;
+  const gaps = current ? dossierGaps(current) : [];
 
   const load = async () => {
     try {
@@ -49,7 +52,22 @@ export function DossierPanel({ jobId, onError }: Props) {
     void load();
     setAnswerQuestion('');
     setAnswerText('');
+    setConfirmDelete(false);
   }, [jobId]);
+
+  const remove = async () => {
+    if (!current) return;
+    setBusy(true);
+    try {
+      await sendGatewayRequest({ action: 'delete-dossier', id: current.id });
+      setDossiers((existing) => existing.filter((item) => item.id !== current.id));
+      setConfirmDelete(false);
+    } catch (reason) {
+      onError(reason instanceof Error ? reason.message : 'Could not delete the application record.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const run = async (action: () => Promise<ApplicationDossier>) => {
     setBusy(true);
@@ -81,6 +99,11 @@ export function DossierPanel({ jobId, onError }: Props) {
       No application record yet. Opening one captures an immutable snapshot of this posting, the evaluator version, and the claims behind your packet.
       <button type="button" onClick={() => void run(() => sendGatewayRequest({ action: 'open-dossier', id: jobId }))} disabled={busy} className="mt-2 cursor-pointer rounded-lg border border-indigo-200 bg-white px-2.5 py-1 text-[10px] font-bold text-indigo-700 disabled:opacity-50">{busy ? 'Opening…' : 'Open application record'}</button>
     </div> : <>
+      {gaps.length > 0 ? <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5">
+        <p className="text-[10px] font-bold uppercase tracking-wide text-amber-900">Still missing ({gaps.length})</p>
+        <ul className="mt-1 list-disc pl-4 text-[10px] leading-5 text-amber-900">{gaps.map((gap) => <li key={gap}>{gap}</li>)}</ul>
+      </div> : <p className="rounded-lg bg-emerald-50 p-2.5 text-[10px] font-semibold text-emerald-900">This record captures everything the packet needs.</p>}
+
       <dl className="grid grid-cols-2 gap-x-3 gap-y-1 rounded-lg bg-slate-50 p-2.5 text-[10px] text-slate-600">
         <div><dt className="inline font-bold">Captured </dt><dd className="inline">{new Date(current.posting.capturedAt).toLocaleString()}</dd></div>
         <div><dt className="inline font-bold">Content </dt><dd className="inline font-mono">{current.posting.contentHash}</dd></div>
@@ -124,7 +147,14 @@ export function DossierPanel({ jobId, onError }: Props) {
         {current.status !== 'submitted' && <button type="button" onClick={() => void run(() => sendGatewayRequest({ action: 'set-dossier-status', id: current.id, status: 'submitted' }))} disabled={busy} className="cursor-pointer rounded-lg bg-emerald-600 px-2.5 py-1 text-[10px] font-bold text-white disabled:opacity-50">Mark as submitted</button>}
         {current.status === 'submitted' && <button type="button" onClick={() => void run(() => sendGatewayRequest({ action: 'set-dossier-status', id: current.id, status: 'closed' }))} disabled={busy} className="cursor-pointer rounded-lg border border-slate-300 px-2.5 py-1 text-[10px] font-bold text-slate-700 disabled:opacity-50">Close record</button>}
         {current.submittedAt && <span className="text-[10px] text-slate-400">Submitted {new Date(current.submittedAt).toLocaleString()}</span>}
-        <span className="ml-auto text-[10px] text-slate-400">{current.eventIds.length} linked event(s)</span>
+        <span className="text-[10px] text-slate-400">{current.eventIds.length} linked event(s)</span>
+        {!confirmDelete
+          ? <button type="button" onClick={() => setConfirmDelete(true)} disabled={busy} className="ml-auto cursor-pointer text-[10px] font-semibold text-rose-600 hover:text-rose-800 disabled:opacity-50">Delete record</button>
+          : <span className="ml-auto flex items-center gap-1.5 text-[10px] text-rose-700">
+            <span>Delete this record and its answers?</span>
+            <button type="button" onClick={() => void remove()} disabled={busy} className="cursor-pointer rounded bg-rose-600 px-1.5 py-0.5 font-semibold text-white disabled:opacity-50">Yes</button>
+            <button type="button" onClick={() => setConfirmDelete(false)} className="cursor-pointer font-semibold text-slate-500">Cancel</button>
+          </span>}
       </div>
     </>}
   </section>;

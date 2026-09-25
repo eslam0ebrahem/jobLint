@@ -161,8 +161,17 @@ const withAnswer = await call({ action: 'save-dossier-answer', id: dossier.id, a
 const withArtifact = await call({ action: 'save-dossier-artifact', id: dossier.id, artifact: { kind: 'resume', label: 'Résumé 2026', reference: '~/resume.pdf', claimIds: [claim.id] } });
 const submittedDossier = await call({ action: 'set-dossier-status', id: dossier.id, status: 'submitted' });
 const dossiers = await call({ action: 'list-dossiers', jobId });
-const decision = await call({ action: 'save-decision', jobId, state: 'shortlisted', nextAction: 'Send résumé' });
+const decision = await call({ action: 'save-decision', jobId, state: 'shortlisted', rationale: 'Comp is competitive', nextAction: 'Send résumé' });
 const inbox = await call({ action: 'get-decision-inbox' });
+const clearedDecision = await call({ action: 'clear-decision', id: jobId });
+const afterClear = await call({ action: 'get-decision-inbox' });
+assert(decision.rationale === 'Comp is competitive', 'Decision rationale was not stored.');
+assert(clearedDecision === true && !afterClear.items.some((item) => item.jobId === jobId && item.decision), 'Decision could not be cleared.');
+const rereadDecision = await call({ action: 'save-decision', jobId, state: 'shortlisted', nextAction: 'Send résumé' });
+assert(rereadDecision.state === 'shortlisted', 'Decision could not be set again after clearing.');
+const deletedDossier = await call({ action: 'delete-dossier', id: dossier.id });
+assert(deletedDossier === true && (await call({ action: 'list-dossiers', jobId })).length === 0, 'Application record could not be deleted.');
+await call({ action: 'open-dossier', id: jobId });
 const quickClipJobId = quickClip.job.id;
 const comparison = await call({ action: 'compare-jobs', ids: [jobId, quickClipJobId] });
 const funnel = await call({ action: 'get-funnel-analytics' });
@@ -239,6 +248,7 @@ assert(dossier.posting.contentHash && withAnswer.answers.length === 1 && submitt
 assert(withArtifact.artifacts.length === 1 && withArtifact.artifacts[0].claimIds[0] === verifiedClaim.id, 'Dossier artifact provenance failed.');
 assert(dossiers.length === 1 && dossiers[0].id === dossier.id, 'Dossier listing failed.');
 assert(decision.state === 'shortlisted' && inbox.items.some((item) => item.jobId === jobId), 'Decision gateway failed.');
+assert((await call({ action: 'get-events', jobId })).some((event) => event.type === 'decision_recorded'), 'Decision was not written to the activity log.');
 assert(comparison.rows.length === 2 && comparison.basis.length > 0, 'Job comparison gateway failed.');
 assert(funnel.version === 1 && funnel.channels.length > 0, 'Funnel analytics gateway failed.');
 assert(citedPacket.version === 2 && citedPacket.claims.some((item) => item.label === 'TypeScript'), 'Packet did not cite the claim ledger.');

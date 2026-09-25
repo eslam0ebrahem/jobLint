@@ -22,6 +22,7 @@ export function DecisionDialog({ onClose, onError, onNotice }: Props) {
   const [comparison, setComparison] = useState<JobComparison | null>(null);
   const [busy, setBusy] = useState(false);
   const [nextActions, setNextActions] = useState<Record<string, string>>({});
+  const [rationales, setRationales] = useState<Record<string, string>>({});
 
   const load = async () => {
     try {
@@ -38,10 +39,37 @@ export function DecisionDialog({ onClose, onError, onNotice }: Props) {
   const setDecision = async (jobId: string, state: DecisionState) => {
     setBusy(true);
     try {
-      await sendGatewayRequest({ action: 'save-decision', jobId, state, nextAction: nextActions[jobId] });
+      await sendGatewayRequest({
+        action: 'save-decision',
+        jobId,
+        state,
+        nextAction: nextActions[jobId],
+        rationale: rationales[jobId],
+      });
+      setRationales((current) => {
+        const next = { ...current };
+        delete next[jobId];
+        return next;
+      });
+      setNextActions((current) => {
+        const next = { ...current };
+        delete next[jobId];
+        return next;
+      });
+      await load();    } catch (reason) {
+      onError(reason instanceof Error ? reason.message : 'Could not save the decision.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const clearDecision = async (jobId: string) => {
+    setBusy(true);
+    try {
+      await sendGatewayRequest({ action: 'clear-decision', id: jobId });
       await load();
     } catch (reason) {
-      onError(reason instanceof Error ? reason.message : 'Could not save the decision.');
+      onError(reason instanceof Error ? reason.message : 'Could not clear the decision.');
     } finally {
       setBusy(false);
     }
@@ -111,6 +139,14 @@ export function DecisionDialog({ onClose, onError, onNotice }: Props) {
                 {DECISION_STATES.map((state) => <option key={state} value={state}>{state.replace('_', ' ')}</option>)}
               </select>
               <input
+                value={rationales[item.jobId] ?? item.decision?.rationale ?? ''}
+                onChange={(event) => setRationales((current) => ({ ...current, [item.jobId]: event.target.value }))}
+                onBlur={(event) => { if (event.target.value.trim()) void setDecision(item.jobId, item.state); }}
+                placeholder="Why, e.g. comp is competitive"
+                aria-label={`Rationale for ${item.title}`}
+                className="min-w-[10rem] flex-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11px] outline-none focus:border-indigo-400"
+              />
+              <input
                 value={nextActions[item.jobId] ?? item.decision?.nextAction ?? ''}
                 onChange={(event) => setNextActions((current) => ({ ...current, [item.jobId]: event.target.value }))}
                 onBlur={(event) => { if (event.target.value.trim()) void setDecision(item.jobId, item.state); }}
@@ -118,6 +154,7 @@ export function DecisionDialog({ onClose, onError, onNotice }: Props) {
                 aria-label={`Next action for ${item.title}`}
                 className="min-w-[12rem] flex-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11px] outline-none focus:border-indigo-400"
               />
+              {item.decision && <button type="button" onClick={() => void clearDecision(item.jobId)} disabled={busy} title="Remove this decision" className="shrink-0 cursor-pointer rounded border border-slate-200 px-1.5 py-1 text-[10px] font-semibold text-slate-500 hover:bg-slate-50 hover:text-rose-700 disabled:opacity-50">Clear</button>}
             </div>
           </li>)}
         </ul>

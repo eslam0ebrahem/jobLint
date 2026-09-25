@@ -263,8 +263,6 @@ async function handle(request: GatewayRequest): Promise<unknown> {
       return settings.savePolicyConstraints(request.constraints);
     case 'list-dossiers':
       return dossiers.list(request.jobId);
-    case 'get-dossier':
-      return dossiers.get(request.id);
     case 'open-dossier': {
       const packet = await packets.build(request.id).catch(() => undefined);
       const report = await policy.report(request.id).catch(() => undefined);

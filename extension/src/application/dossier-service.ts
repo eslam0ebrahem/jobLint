@@ -6,7 +6,6 @@ import type { ApplicationEvent } from '@/src/types/job';
 import type { PolicyReport } from '@/src/types/policy';
 import {
   createDossier,
-  dossierGaps,
   linkDossierEvent,
   removeDossierAnswer,
   removeDossierArtifact,
@@ -64,10 +63,6 @@ export class DossierService {
     return this.repository.getAll(jobId);
   }
 
-  get(id: string): Promise<ApplicationDossier | undefined> {
-    return this.repository.getById(id);
-  }
-
   async open(jobId: string, packet?: ApplicationPacket, policy?: PolicyReport): Promise<ApplicationDossier> {
     const job = await this.jobs.get(jobId);
     if (!job) throw new Error('Job not found.');
@@ -119,16 +114,14 @@ export class DossierService {
   }
 
   async remove(id: string): Promise<true> {
+    // The record must be read before deletion so subscribers are told which
+    // job changed, not which dossier was dropped.
+    const existing = await this.repository.getById(id);
+    if (!existing) throw new Error('Dossier not found.');
     const removed = await this.repository.delete(id);
     if (!removed) throw new Error('Dossier not found.');
-    this.events.changed(id);
+    this.events.changed(existing.jobId);
     return true;
-  }
-
-  async summary(id: string): Promise<{ dossier: ApplicationDossier; gaps: string[] }> {
-    const dossier = await this.repository.getById(id);
-    if (!dossier) throw new Error('Dossier not found.');
-    return { dossier, gaps: dossierGaps(dossier) };
   }
 
   /** Best-effort: losing an audit entry must never fail the user's action. */

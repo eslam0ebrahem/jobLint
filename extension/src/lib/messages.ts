@@ -75,7 +75,6 @@ export type GatewayRequest =
   | { action: 'get-policy-constraints' }
   | { action: 'save-policy-constraints'; constraints: PolicyConstraints }
   | { action: 'list-dossiers'; jobId?: string }
-  | { action: 'get-dossier'; id: string }
   | { action: 'open-dossier'; id: string }
   | { action: 'save-dossier-answer'; id: string; answer: DossierAnswerInput }
   | { action: 'remove-dossier-answer'; id: string; answerId: string }
@@ -160,7 +159,6 @@ export type GatewayData = {
   'get-policy-constraints': PolicyConstraints;
   'save-policy-constraints': PolicyConstraints;
   'list-dossiers': ApplicationDossier[];
-  'get-dossier': ApplicationDossier;
   'open-dossier': ApplicationDossier;
   'save-dossier-answer': ApplicationDossier;
   'remove-dossier-answer': ApplicationDossier;
@@ -235,7 +233,6 @@ export function isGatewayRequest(value: unknown): value is GatewayRequest {
     case 'delete-claim':
     case 'get-job-requirements':
     case 'get-policy-report':
-    case 'get-dossier':
     case 'open-dossier':
     case 'remove-dossier-answer':
     case 'remove-dossier-artifact':

@@ -35,10 +35,6 @@ export interface DecisionEventRecorder {
   recordEvent(jobId: string, type: ApplicationEvent['type'], metadata?: ApplicationEvent['metadata']): Promise<ApplicationEvent>;
 }
 
-export interface DecisionInboxReader {
-  inbox(): Promise<DecisionInbox>;
-}
-
 /**
  * Explicit intent on top of the kanban. A decision never changes the score and
  * never moves a column; it records why and what happens next.
