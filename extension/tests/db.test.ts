@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getActiveJobs, getAllJobs, getEvents, getJob, recordOutcome, saveEvent, saveJob, updateJobColumn, updateJobNotes } from '@/src/lib/db';
+import { getActiveJobs, getAllJobs, getEvents, getJob, recordOutcome, saveEvent, saveJob, updateJobColumn, updateJobNotes } from '@/src/infrastructure/database/job-repository';
 
 describe('IndexedDB repository', () => {
   it('deduplicates by identity and returns newest first', async () => {
@@ -31,6 +31,8 @@ describe('IndexedDB repository', () => {
       request.onerror = () => reject(request.error);
     });
     const [job] = await getActiveJobs();
+    expect(job).toBeDefined();
+    if (!job) throw new Error('Expected the migrated job to be restored.');
     expect(job).toMatchObject({ id: 'legacy-1', column: 'applied', source: 'linkedin' });
     expect(job.identity?.key).toContain('linkedin');
     expect(job.createdAt).toBeTruthy();

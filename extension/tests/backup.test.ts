@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseBackupPayload } from '@/src/lib/backup';
+import { parseBackupPayload } from '@/src/domain/backup';
 
 describe('backup parser', () => {
   it('accepts a legacy v1 array and normalizes its job fields', () => {

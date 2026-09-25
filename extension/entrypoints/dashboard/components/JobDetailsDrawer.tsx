@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { sendGatewayRequest } from '@/src/lib/gateway';
-import type { ApplicationEvent, ApplicationOutcome, Column, Job, RiskLevel } from '@/src/types/job';
+import { useJobEvents } from '@/src/hooks/useJobEvents';
+import type { ApplicationOutcome, Column, Job, RiskLevel } from '@/src/types/job';
 import { COLUMNS } from '../constants';
 
 interface Props {
@@ -29,8 +29,7 @@ export function JobDetailsDrawer({ job, onClose, onMove, onDelete, onEvaluate, o
   const [notesSaved, setNotesSaved] = useState(false);
   const [savingNotes, setSavingNotes] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [events, setEvents] = useState<ApplicationEvent[]>([]);
-  const [eventsLoading, setEventsLoading] = useState(false);
+  const { events, eventsLoading } = useJobEvents(job?.id, job?.updatedAt);
 
   useEffect(() => {
     setNotes(job?.notes || '');
@@ -43,17 +42,6 @@ export function JobDetailsDrawer({ job, onClose, onMove, onDelete, onEvaluate, o
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
-
-  useEffect(() => {
-    if (!job) return;
-    let active = true;
-    setEventsLoading(true);
-    sendGatewayRequest({ action: 'get-events', jobId: job.id })
-      .then((nextEvents) => { if (active) setEvents(nextEvents); })
-      .catch(() => { if (active) setEvents([]); })
-      .finally(() => { if (active) setEventsLoading(false); });
-    return () => { active = false; };
-  }, [job?.id, job?.updatedAt]);
 
   if (!job) return null;
   const evaluation = job.evaluation;

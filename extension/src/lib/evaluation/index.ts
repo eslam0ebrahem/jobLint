@@ -130,6 +130,3 @@ export function getProfileMissingNotice(profile?: Profile | null): string | null
   if (!profile.skills?.trim()) return 'Please set your Skills & Tech Stack in Profile before evaluating jobs.';
   return null;
 }
-
-export const evaluateJobWithAi = (job: DetectedJob, profile?: Profile, preferences?: UserPreferences) =>
-  import('./llm').then(({ evaluateWithLlm }) => evaluateWithLlm(job, evaluateJob(job, profile, preferences), profile));

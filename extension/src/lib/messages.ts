@@ -12,6 +12,20 @@ import type {
   Profile,
   UserPreferences,
 } from '@/src/types/job';
+import type {
+  BackupConflictStrategy,
+  BackupImportResult,
+  BackupPayload,
+  BackupPreview,
+} from '@/src/domain/backup';
+
+export type {
+  BackupConflictStrategy,
+  BackupImportResult,
+  BackupIssue,
+  BackupPayload,
+  BackupPreview,
+} from '@/src/domain/backup';
 
 export type GatewayRequest =
   | { action: 'list-jobs'; includeDiscarded?: boolean }
@@ -55,35 +69,6 @@ export type GatewayResponse<T = unknown> =
 export type AiModelResult = { success: boolean; models: string[]; error?: string };
 export type ClipJobResult = { job: Job; isNew: boolean; aiEnhanced: boolean };
 export type SavedStatusResult = { isSaved: boolean; job?: Job };
-export type BackupPayload = {
-  schemaVersion: 2;
-  exportedAt: string;
-  jobs: Job[];
-  events: ApplicationEvent[];
-  profile: Profile;
-  preferences: UserPreferences;
-};
-export type BackupConflictStrategy = 'skip' | 'overwrite';
-export type BackupIssue = { index: number; reason: string };
-export type BackupPreview = {
-  valid: boolean;
-  schemaVersion: 1 | 2;
-  jobCount: number;
-  eventCount: number;
-  conflictCount: number;
-  hasProfile: boolean;
-  hasPreferences: boolean;
-  issues: BackupIssue[];
-};
-export type BackupImportResult = {
-  imported: number;
-  replaced: number;
-  skipped: number;
-  eventsImported: number;
-  metadataImported: boolean;
-  issues: BackupIssue[];
-};
-
 export type GatewayData = {
   'list-jobs': Job[];
   'get-job': Job | undefined;

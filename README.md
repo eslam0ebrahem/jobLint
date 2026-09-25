@@ -23,7 +23,7 @@ JobLint has no application backend, account, analytics, or telemetry.
 | Candidate profile and scoring preferences | `browser.storage.local` | Local only |
 | AI endpoint, key, model, and opt-in flags | `browser.storage.local` | Disabled until explicitly configured |
 
-The optional AI adapter sends a bounded job snapshot directly from the browser to the endpoint selected in Settings. It does not replace the deterministic score: a successful response is stored as an advisory assessment, while malformed responses, timeouts, and network failures fall back to the local report. Automatic enhancement is off by default and requires both explicit AI enablement and the automatic-enhancement consent.
+The optional AI adapter sends a bounded job snapshot directly from the browser to the endpoint selected in Settings. It does not replace the deterministic score: a successful response is stored as an advisory assessment, while malformed responses, timeouts, and network failures fall back to the local report. Automatic enhancement remains off by default and runs only when the user preference, `AiConfig.enabled`, and the persisted `AiConfig.autoEnhance` flag are all true.
 
 ## Supported platforms
 
@@ -51,7 +51,7 @@ Production builds:
 ```bash
 npm run compile       # tsc --noEmit
 npm run lint
-npm test              # Vitest domain, persistence, detector, gateway, backup, and AI tests
+npm test              # 33 Vitest domain, application, persistence, detector, gateway, backup, and AI tests
 npm run build         # .output/chrome-mv3
 npm run build:firefox # .output/firefox-mv2
 ```
@@ -72,26 +72,32 @@ LinkedIn / Indeed pages
         ▼
 content script ── floating badge / clip request ──┐
                                                    ▼
-popup · dashboard · profile · options ── typed gateway ── background service worker
+popup · dashboard · profile · options ── typed gateway ── background composition
                                                                │
-                         ┌─────────────────────────────┬───────────────┐
-                         ▼                             ▼               ▼
-                 IndexedDB v6 jobs/events       storage.local       optional AI
-                 identity + deduplication       profile/preferences  direct fetch
+                                                               ▼
+                                              application use-case services
+                                               job · backup · settings · AI review
+                                                       │            │
+                                                       ▼            ▼
+                                       pure domain policies       injected adapters
+                             identity · evaluator · insights   IndexedDB v6 · storage.local
+                                  backup parsing · AI policy   detector platform · AI HTTP
 ```
 
-The background service worker is the only owner of persistence, evaluation orchestration, and settings writes. UI pages use `sendGatewayRequest`; they do not import the database or evaluator directly. The evaluator itself is deterministic and testable, while the AI adapter is a bounded, replaceable network boundary.
+Dependencies point inward: entrypoints call the typed gateway; the background entry point only composes services, dispatches actions, emits events, and wires lifecycle events; application services depend on injected repository, settings, evaluator, and AI ports; domain code is pure; infrastructure owns IndexedDB, `browser.storage.local`, detector-platform access, and AI HTTP. UI pages use `sendGatewayRequest` and focused hooks rather than persistence or evaluator APIs. The local evaluator remains deterministic and authoritative, while AI is a bounded, replaceable advisory adapter.
 
 ### Important modules
 
-- `extension/entrypoints/background.ts` — gateway request handling, orchestration, events, backups, and lifecycle injection.
+- `extension/entrypoints/background.ts` — dependency composition, typed gateway dispatch, events, and lifecycle wiring.
 - `extension/entrypoints/content.ts` — detector lifecycle and isolated badge UI.
 - `extension/entrypoints/dashboard/` — Kanban, insights, outcomes, diagnostics, and restore review.
-- `extension/src/lib/messages.ts` — typed request/event/response contract and runtime guard.
-- `extension/src/lib/db.ts` — versioned IndexedDB repository and atomic event writes.
-- `extension/src/lib/evaluation/` — local evaluator, normalization, role/skill/scoring rules, and AI adapter.
-- `extension/src/lib/detectors/` — platform registry, structured data, DOM detectors, and health diagnostics.
-- `extension/tests/` — 25 focused tests covering the domain and integration boundaries.
+- `extension/src/lib/messages.ts` and `gateway.ts` — typed protocol/runtime guard and client-only transport.
+- `extension/src/application/` — injected job, backup, settings, AI-settings, and advisory-review use cases.
+- `extension/src/domain/` — identity, job normalization, insights, settings/AI policy, and v1/v2 backup parsing.
+- `extension/src/infrastructure/` — IndexedDB v6, browser storage, detector health, and AI HTTP adapters.
+- `extension/src/lib/evaluation/` — deterministic evaluator, normalization, and role/skill/scoring rules only.
+- `extension/src/lib/detectors/` — platform registry, structured data, and DOM detector adapters.
+- `extension/tests/` — 33 tests in 9 suites covering domain policies, application workflows, and integration boundaries.
 
 ## Data portability
 

@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, vi } from 'vitest';
-import { resetDatabaseForTests } from '@/src/lib/db';
+import { resetDatabaseForTests } from '@/src/infrastructure/database/job-repository';
 
 type Listener = (message: unknown) => void;
 const storage = new Map<string, unknown>();

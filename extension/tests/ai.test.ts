@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { cleanApiKey, cleanBaseUrl, DEFAULT_AI_CONFIG, fetchAiModels, getAiConfig, saveAiConfig } from '@/src/lib/ai';
+import { cleanApiKey, cleanBaseUrl, DEFAULT_AI_CONFIG } from '@/src/domain/ai';
+import { getAiConfig, saveAiConfig } from '@/src/infrastructure/ai/config-repository';
+import { AiHttpTransport, fetchAiModels } from '@/src/infrastructure/ai/transport';
+import { AiReviewService } from '@/src/application/ai-review';
 import { evaluateJob } from '@/src/lib/evaluation';
-import { evaluateWithLlm } from '@/src/lib/evaluation/llm';
 import type { DetectedJob } from '@/src/types/job';
 
 const job: DetectedJob = {
@@ -28,7 +30,8 @@ describe('optional AI adapter', () => {
     await saveAiConfig({ ...DEFAULT_AI_CONFIG, provider: 'openai', baseUrl: 'https://api.example.com/v1', apiKey: 'sk-test', model: 'test-model', enabled: true });
     vi.stubGlobal('fetch', vi.fn(async () => new Response('not json', { status: 200 })));
     const fallback = evaluateJob(job, { roles: 'React Engineer', skills: 'React, TypeScript' });
-    const result = await evaluateWithLlm(job, fallback, { roles: 'React Engineer', skills: 'React, TypeScript' });
+    const reviewer = new AiReviewService({ getConfig: getAiConfig }, new AiHttpTransport());
+    const result = await reviewer.review(job, fallback, { roles: 'React Engineer', skills: 'React, TypeScript' });
     expect(result).toEqual(fallback);
   });
 
@@ -36,7 +39,8 @@ describe('optional AI adapter', () => {
     await saveAiConfig({ ...DEFAULT_AI_CONFIG, provider: 'openai', baseUrl: 'https://api.example.com/v1', apiKey: 'sk-test', model: 'test-model', enabled: true });
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ score: 3.1, verdict: 'Skip', reason: 'Partial evidence', matchedSkills: ['React'], missingSkills: ['AWS'] }) } }] }), { status: 200, headers: { 'content-type': 'application/json' } })));
     const fallback = evaluateJob(job, { roles: 'React Engineer', skills: 'React, TypeScript' });
-    const result = await evaluateWithLlm(job, fallback, { roles: 'React Engineer', skills: 'React, TypeScript' });
+    const reviewer = new AiReviewService({ getConfig: getAiConfig }, new AiHttpTransport());
+    const result = await reviewer.review(job, fallback, { roles: 'React Engineer', skills: 'React, TypeScript' });
     expect(result.aiEnhanced).toBe(true);
     expect(result.aiAssessment?.model).toBe('test-model');
     expect(result.score).toBe(fallback.score);

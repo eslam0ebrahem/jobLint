@@ -333,7 +333,7 @@
   </section>
 
   <!-- ============ 8 · Demo 2: evaluation engine ============ -->
-  <section class="slide" data-title="Demo · Dual-tier evaluation" data-time="0:40" data-script="Now the part I care most about: evaluation. Tier one is a deterministic engine that runs instantly in the browser — it matches the description against your skills, classifies role and seniority, scores location compatibility, and hunts red flags. All of it feeds a weighted score from one to five, with a verdict: Apply, Caution, or Skip. Tier two is opt-in: plug in any OpenAI-compatible endpoint — even a local Ollama — and the LLM adds a bounded advisory assessment, flagged with the AI badge. It never overwrites the deterministic score. If the API fails or returns malformed data, the local report remains.">
+  <section class="slide" data-title="Demo · Dual-tier evaluation" data-time="0:40" data-script="Now the part I care most about: evaluation. Tier one is a deterministic engine that runs instantly in the browser — it matches the description against your skills, classifies role and seniority, scores location compatibility, and hunts red flags. All of it feeds a weighted score from one to five, with a verdict: Apply, Caution, or Skip. Tier two is opt-in: plug in any OpenAI-compatible endpoint — even a local Ollama — and the LLM adds a bounded advisory assessment, flagged with the AI badge. It never overwrites the deterministic score. Automatic enhancement runs only when the profile preference, AI enablement, and config auto-enhancement flag are all on. If the API fails or returns malformed data, the local report remains.">
     <span class="kicker grad" data-anim style="--d:0">Demo 2 · Fit Evaluation</span>
     <h2 data-anim style="--d:1">Dual-tier evaluation: <span class="grad">heuristics + LLM</span></h2>
     <div class="scorewrap">
@@ -398,37 +398,37 @@
   </section>
 
   <!-- ============ 11 · Architecture ============ -->
-  <section class="slide" data-title="Architecture" data-time="0:32" data-script="Architecturally, everything is wired through a background service worker. Content scripts handle detection and the floating badge; the background worker owns persistence, settings, and message routing. Popup, dashboard, profile, and options use the same typed gateway, while the gateway makes the storage boundary explicit: jobs and events in IndexedDB, profile and preferences in local extension storage. The scoring engine is pure and testable, and the LLM sits behind a bounded adapter — AI is a plug-in, not a dependency.">
+  <section class="slide" data-title="Architecture" data-time="0:32" data-script="Architecturally, every UI action crosses one typed gateway into a background composition root. The background no longer owns business rules: it constructs application services for jobs, backups, settings, and AI review. Those services depend on injected ports. Pure domain modules hold identity, scoring, insights, and backup policies; infrastructure adapters own IndexedDB v6, local extension storage, detector-platform access, and optional AI HTTP. That direction keeps the evaluator deterministic and the network boundary replaceable.">
     <span class="kicker grad" data-anim style="--d:0">How · Architecture</span>
-    <h2 data-anim style="--d:1">Five entrypoints, one gateway, explicit storage boundaries</h2>
+    <h2 data-anim style="--d:1">One gateway, layered use cases, explicit adapters</h2>
     <div class="diagram" data-anim style="--d:2">
       <div class="drow">
         <div class="dbox"><div class="t">🌐 LinkedIn / Indeed</div><div class="d">Job sites — dynamic, redesigned often</div></div>
         <span class="darrow">⇄</span>
-        <div class="dbox"><div class="t">🧩 Content script</div><div class="d">Platform DOM detectors + Shadow DOM floating badge</div></div>
+        <div class="dbox"><div class="t">🖥️ React entrypoints</div><div class="d">Typed gateway clients + focused state hooks</div></div>
         <span class="darrow">⇄</span>
-        <div class="dbox hero"><div class="t">⚙️ Background service worker</div><div class="d">Message routing · clip · dedup · persistence</div></div>
+        <div class="dbox hero"><div class="t">⚙️ Background composition</div><div class="d">Dependency wiring · dispatch · events · lifecycle</div></div>
       </div>
       <span class="darrow down">↓</span>
       <div class="drow">
-        <div class="dbox hero"><div class="t">🗄️ IndexedDB <small class="note">(v6)</small></div><div class="d">Jobs · evaluations · notes · outcomes · application events</div></div>
+        <div class="dbox hero"><div class="t">🧩 Application services</div><div class="d">Job · backup · settings · AI review workflows</div></div>
         <span class="darrow">⇄</span>
-        <div class="dbox"><div class="t">🖥️ Popup · Dashboard · Profile · Options</div><div class="d">React pages over one typed gateway</div></div>
+        <div class="dbox"><div class="t">📐 Pure domain</div><div class="d">Identity · evaluator · insights · backup · policy</div></div>
         <span class="darrow">⇄</span>
-        <div class="dbox"><div class="t">🧠 LLM API (optional)</div><div class="d">Any OpenAI-compatible endpoint, direct calls, own key</div></div>
+        <div class="dbox"><div class="t">🔌 Infrastructure adapters</div><div class="d">IndexedDB v6 · storage.local · detectors · AI HTTP</div></div>
       </div>
     </div>
-    <p class="lead" data-anim style="--d:3; margin-top:20px">The scoring engine is <b>pure &amp; testable</b> — the LLM sits behind the same interface. AI is a <b>plug-in, not a dependency</b>.</p>
+    <p class="lead" data-anim style="--d:3; margin-top:20px">Dependencies point inward: <b>pure policies</b> at the core, replaceable <b>adapters</b> at the edge, and AI remains a <b>plug-in</b>.</p>
   </section>
 
   <!-- ============ 12 · Tech stack ============ -->
-  <section class="slide" data-title="Tech stack" data-time="0:25" data-script="The stack: WXT as the bundler — hot reload, generated host permissions, and Chrome/Firefox builds. React 19 with typed strict TypeScript, Tailwind v4, and a small promise wrapper over IndexedDB. Deliberately no state-management library — React state plus one gateway-backed persistence hook covers the surfaces. Zero backend, zero telemetry; optional AI requests go directly from the browser using your own key.">
+  <section class="slide" data-title="Tech stack" data-time="0:25" data-script="The stack: WXT as the bundler — hot reload, generated host permissions, and Chrome/Firefox builds. React 19 with typed strict TypeScript, Tailwind v4, and a small promise wrapper over IndexedDB. Deliberately no state-management library — focused gateway-backed hooks own job collections and event timelines. Zero backend, zero telemetry; optional AI requests go directly from the browser using your own key.">
     <span class="kicker grad" data-anim style="--d:0">How · The Stack</span>
     <h2 data-anim style="--d:1">Modern stack, <span class="grad">zero backend</span></h2>
     <div class="grid6" data-anim style="--d:2">
       <div class="tech"><div class="tt">⚡ WXT <small class="note">0.21</small></div><div class="td">Extension bundler: hot reload, auto-manifest, Firefox builds</div></div>
       <div class="tech"><div class="tt">⚛️ React <small class="note">19</small></div><div class="td">Four React surfaces over the gateway; no state library</div></div>
-      <div class="tech"><div class="tt">🛡️ TypeScript <small class="note">5.9</small></div><div class="td">Typed gateway; compile, lint, and 25 focused tests cover the boundaries</div></div>
+      <div class="tech"><div class="tt">🛡️ TypeScript <small class="note">5.9</small></div><div class="td">Typed gateway; compile, lint, and 33 tests across 9 suites</div></div>
       <div class="tech"><div class="tt">🎨 Tailwind <small class="note">v4</small></div><div class="td">CSS-first config via Vite plugin, shared styles</div></div>
       <div class="tech"><div class="tt">🗄️ idb + IndexedDB</div><div class="td">Promise wrapper; versioned jobs/events stores with identity deduplication</div></div>
       <div class="tech"><div class="tt">🔌 OpenAI-compatible API</div><div class="td">OpenRouter · OpenAI · Groq · MiniMax · Ollama — direct, own key</div></div>

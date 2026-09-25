@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canonicalizeUrl, createJobIdentity, identityMatches } from '@/src/lib/identity';
+import { canonicalizeUrl, createJobIdentity, identityMatches } from '@/src/domain/identity';
 
 describe('job identity', () => {
   it('removes tracking parameters and fragments', () => {

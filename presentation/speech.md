@@ -30,7 +30,7 @@ JobLint is a WXT extension for LinkedIn and Indeed. It detects the current posti
 Here’s the first interaction. On a supported job page, JobLint injects an isolated Shadow-DOM badge. One click extracts the fields it can find, cleans the description, checks identity-based duplicates, and runs the local score. If the posting is already saved, the badge says so. Detection uses URL and canonical signals, JSON-LD, and several DOM selector layers. If a site changes, the dashboard shows diagnostics and the manual-entry form remains available. Indeed is configured across nine domains, not a claim of worldwide coverage.
 
 ### Slide 8 · Evaluation (0:40)
-The evaluator is evidence-first. It extracts skills with aliases, classifies role and seniority, scores location and work mode, looks for compensation and risk signals, and reports missing data instead of inventing it. The result has fit, opportunity, and safety dimensions, confidence, a verdict, and a traceable evidence list. The optional AI adapter is different: it sends a bounded snapshot to the endpoint I choose and attaches an advisory assessment. It never replaces the deterministic score, and malformed output or a timeout falls back safely.
+The evaluator is evidence-first. It extracts skills with aliases, classifies role and seniority, scores location and work mode, looks for compensation and risk signals, and reports missing data instead of inventing it. The result has fit, opportunity, and safety dimensions, confidence, a verdict, and a traceable evidence list. The optional AI adapter is different: it sends a bounded snapshot to the endpoint I choose and attaches an advisory assessment. It never replaces the deterministic score, and malformed output or a timeout falls back safely. Automatic enhancement runs only when the profile preference, AI enablement, and the config-level auto-enhancement flag are all enabled.
 
 ### Slide 9 · Pipeline (0:23)
 The board has six stages: To Apply, Applied, Assessment, Interviewing, Offer, and Rejected. Cards can move across stages, with search, risk and source filters, insights, outcomes, notes, and an activity timeline in the details drawer. CSV is formula-safe for spreadsheets. JSON exports include jobs, events, profile, and preferences, while restore previews conflicts before writing.
@@ -41,10 +41,10 @@ The board has six stages: To Apply, Applied, Assessment, Interviewing, Offer, an
 Now — how is it actually built?
 
 ### Slide 11 · Architecture (0:32)
-The content script owns detection and the badge, but not persistence. A background service worker owns IndexedDB, events, settings, evaluation orchestration, and backup import/export. Popup, dashboard, profile, and options communicate through one typed runtime gateway, so the UI never reaches into the database directly. The local scoring functions are pure and testable. The LLM is a bounded adapter behind the same conceptual boundary, and it is optional rather than a dependency.
+The content script owns detection and the badge, but not persistence. Every UI action crosses one typed runtime gateway into a background composition root. The background wires dependencies and dispatches actions; application services own job, backup, settings, and AI-review workflows. Pure domain modules hold identity, scoring, insights, and backup rules, while infrastructure adapters own IndexedDB, local extension storage, detector-platform access, and AI HTTP. The UI never reaches into persistence directly, and optional AI remains outside the deterministic core.
 
 ### Slide 12 · Tech stack (0:25)
-The stack is WXT for extension bundling and browser targets, React 19, strict TypeScript, Tailwind v4, and a small promise wrapper over IndexedDB. Vitest, jsdom, and fake IndexedDB cover the domain and integration boundaries. There is no backend and no telemetry. If AI is enabled, the browser calls the configured provider directly with the user’s own key.
+The stack is WXT for extension bundling and browser targets, React 19, strict TypeScript, Tailwind v4, and a small promise wrapper over IndexedDB. Vitest, jsdom, and fake IndexedDB run 33 tests across domain policies, application services, and integration boundaries. There is no backend and no telemetry. If AI is enabled, the browser calls the configured provider directly with the user’s own key.
 
 ## Part 4 — Insights and close (slides 13–14)
 
@@ -68,4 +68,4 @@ JobLint is MIT-licensed and installs from a local production build. Local evalua
 
 - Do not claim that every field is always extracted; demonstrate the warnings and manual fallback when relevant.
 - Keep the AI explanation explicit: advisory only, direct request, no silent score replacement.
-- If time is tight, compress slides 11–12 into: “one typed gateway, explicit local storage boundaries, and a pure evaluator with a bounded AI adapter.”
+- If time is tight, compress slides 11–12 into: “one typed gateway, application use cases, pure domain policies, and replaceable browser/network adapters.”
