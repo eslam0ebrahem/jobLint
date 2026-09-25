@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface Props {
   totalJobs: number;
@@ -7,16 +7,12 @@ interface Props {
   onExportCsv: () => void;
   onExportJson: () => void;
   onImportJson: (file: File) => void;
+  onAddManual: () => void;
+  onShowInsights: () => void;
+  onShowDiagnostics: () => void;
 }
 
-export function DashboardHeader({
-  totalJobs,
-  search,
-  onSearchChange,
-  onExportCsv,
-  onExportJson,
-  onImportJson,
-}: Props) {
+export function DashboardHeader({ totalJobs, search, onSearchChange, onExportCsv, onExportJson, onImportJson, onAddManual, onShowInsights, onShowDiagnostics }: Props) {
   const [showMenu, setShowMenu] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -28,133 +24,37 @@ export function DashboardHeader({
     }
   }, [showMenu]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      onImportJson(file);
-      e.target.value = '';
-    }
-  };
-
-  const openProfile = () => {
-    browser.tabs.create({ url: browser.runtime.getURL('/profile.html') });
-  };
-
-  const openOptions = () => {
-    browser.runtime.openOptionsPage();
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) onImportJson(file);
+    event.target.value = '';
   };
 
   return (
-    <header className="flex flex-wrap sm:flex-nowrap justify-between items-center gap-3 mb-4 bg-white px-4 py-3 rounded-xl shadow-xs border border-slate-200 shrink-0">
-      <div className="flex items-center gap-2.5">
-        <h1 className="text-base sm:text-lg font-bold text-slate-900 m-0 whitespace-nowrap">
-          JobLint Kanban
-        </h1>
-        <span className="bg-slate-100 text-slate-600 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-slate-200 whitespace-nowrap">
-          {totalJobs} jobs
-        </span>
-      </div>
-      <div className="flex items-center gap-2 w-full sm:w-auto">
-        <input
-          type="text"
-          placeholder="Search jobs or companies..."
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full sm:w-64 px-3 py-1.5 text-xs border border-slate-300 rounded-lg outline-none focus:border-indigo-500 transition-colors bg-white"
-        />
-
-        {/* Data Backup & Export Dropdown */}
+    <header className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:flex-nowrap">
+      <div className="flex items-center gap-2.5"><h1 className="whitespace-nowrap text-lg font-bold text-slate-950">JobLint Kanban</h1><span className="whitespace-nowrap rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">{totalJobs} jobs</span></div>
+      <div className="flex w-full items-center gap-2 sm:w-auto">
+        <input type="search" placeholder="Search title, company, location…" value={search} onChange={(event) => onSearchChange(event.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs outline-none transition focus:border-indigo-500 sm:w-56" />
+        <button type="button" onClick={onAddManual} title="Add a job manually" className="shrink-0 rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">+ Add</button>
+        <button type="button" onClick={onShowInsights} title="Open search insights" className="shrink-0 rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200">Insights</button>
         <div className="relative">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowMenu((prev) => !prev);
-            }}
-            title="Data Backup & Export"
-            className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
-          >
-            <span>💾</span>
-            <span className="hidden sm:inline">Data</span>
-            <span className="text-[10px] text-slate-400">▾</span>
-          </button>
-
-          {showMenu && (
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="absolute right-0 mt-1.5 w-56 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 z-50 text-xs text-slate-700 font-sans"
-            >
-              <button
-                onClick={() => {
-                  onExportCsv();
-                  setShowMenu(false);
-                }}
-                className="w-full text-left px-3.5 py-2 hover:bg-slate-50 flex items-center gap-2 cursor-pointer transition-colors"
-              >
-                <span className="text-sm">📊</span>
-                <div>
-                  <div className="font-semibold text-slate-800">Export to CSV</div>
-                  <div className="text-[10px] text-slate-400">For Excel, Google Sheets</div>
-                </div>
-              </button>
-
-              <button
-                onClick={() => {
-                  onExportJson();
-                  setShowMenu(false);
-                }}
-                className="w-full text-left px-3.5 py-2 hover:bg-slate-50 flex items-center gap-2 cursor-pointer transition-colors"
-              >
-                <span className="text-sm">📦</span>
-                <div>
-                  <div className="font-semibold text-slate-800">Backup all (JSON)</div>
-                  <div className="text-[10px] text-slate-400">Full backup with notes</div>
-                </div>
-              </button>
-
-              <div className="my-1 border-t border-slate-100" />
-
-              <button
-                onClick={() => {
-                  fileInputRef.current?.click();
-                  setShowMenu(false);
-                }}
-                className="w-full text-left px-3.5 py-2 hover:bg-slate-50 flex items-center gap-2 cursor-pointer transition-colors text-indigo-700"
-              >
-                <span className="text-sm">📥</span>
-                <div>
-                  <div className="font-semibold">Restore from JSON</div>
-                  <div className="text-[10px] text-slate-400">Import backup records</div>
-                </div>
-              </button>
-            </div>
-          )}
-
-          <input
-            type="file"
-            ref={fileInputRef}
-            accept=".json,application/json"
-            onChange={handleFileChange}
-            className="hidden"
-          />
+          <button type="button" onClick={(event) => { event.stopPropagation(); setShowMenu((current) => !current); }} className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200" aria-expanded={showMenu}>Data <span className="text-[10px] text-slate-400">▾</span></button>
+          {showMenu && <div onClick={(event) => event.stopPropagation()} className="absolute right-0 z-50 mt-1.5 w-60 rounded-xl border border-slate-200 bg-white py-1.5 text-xs text-slate-700 shadow-xl">
+            <MenuButton label="Export CSV" detail="Spreadsheet-ready job report" onClick={() => { onExportCsv(); setShowMenu(false); }} />
+            <MenuButton label="Download full backup" detail="Jobs, events, profile, preferences" onClick={() => { onExportJson(); setShowMenu(false); }} />
+            <div className="my-1 border-t border-slate-100" />
+            <MenuButton label="Review and restore JSON" detail="Preview conflicts before import" onClick={() => { fileInputRef.current?.click(); setShowMenu(false); }} />
+            <MenuButton label="Detector diagnostics" detail="Check active supported tabs" onClick={() => { onShowDiagnostics(); setShowMenu(false); }} />
+          </div>}
+          <input ref={fileInputRef} type="file" accept=".json,application/json" onChange={handleFileChange} className="hidden" />
         </div>
-
-        <button
-          onClick={openProfile}
-          title="Candidate Profile"
-          className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
-        >
-          <span>👤</span>
-          <span className="hidden sm:inline">Profile</span>
-        </button>
-        <button
-          onClick={openOptions}
-          title="AI Settings"
-          className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
-        >
-          <span>⚙️</span>
-          <span className="hidden sm:inline">Settings</span>
-        </button>
+        <button type="button" onClick={() => browser.tabs.create({ url: browser.runtime.getURL('/profile.html') })} title="Candidate Profile" className="shrink-0 rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200">Profile</button>
+        <button type="button" onClick={() => browser.runtime.openOptionsPage()} title="AI Settings" className="shrink-0 rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200">Settings</button>
       </div>
     </header>
   );
+}
+
+function MenuButton({ label, detail, onClick }: { label: string; detail: string; onClick: () => void }) {
+  return <button type="button" onClick={onClick} className="w-full cursor-pointer px-3.5 py-2 text-left hover:bg-slate-50"><span className="block font-semibold text-slate-800">{label}</span><span className="block text-[10px] text-slate-400">{detail}</span></button>;
 }

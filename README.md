@@ -1,224 +1,104 @@
-# JobLint — AI Job Hunter & Kanban Tracker
+# JobLint — local-first job clipper and Kanban tracker
 
-<div align="center">
+JobLint is a WXT Chrome/Firefox extension for clipping supported job postings, producing deterministic fit reports, and tracking applications through a six-stage Kanban board. It is designed to remain useful without a network connection: the local evaluator is the default, and AI review is explicit and opt-in.
 
-**Smart Chrome Extension (Manifest V3) for automated job clipping, AI-powered fit evaluation, skill gap analysis, and Kanban tracking.**
+## What it does
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-19.2-61dafb.svg)](https://react.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4.3-38bdf8.svg)](https://tailwindcss.com/)
-[![WXT](https://img.shields.io/badge/WXT-0.21-purple.svg)](https://wxt.dev/)
-[![Manifest V3](https://img.shields.io/badge/Chrome-MV3-green.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+- Detects LinkedIn and Indeed postings with layered DOM selectors plus defensive JSON-LD/canonical-link extraction.
+- Adds a Shadow-DOM floating badge with duplicate detection and a manual-entry fallback.
+- Produces versioned, evidence-first reports with fit, opportunity, safety, risk, confidence, missing data, matched skills, gaps, and red flags.
+- Tracks stage changes, notes, outcomes, and application events.
+- Filters and sorts the dashboard, shows pipeline insights, and exposes detector diagnostics for active supported tabs.
+- Exports spreadsheet-safe CSV and complete JSON backups.
+- Restores legacy v1 job arrays and v2 backups with a conflict preview, skip/overwrite choices, event restoration, and per-record warnings.
+- Supports Chrome and Firefox production builds through WXT.
 
-[Features](#-features) •
-[Supported Platforms](#-supported-job-platforms) •
-[Installation](#-installation--setup) •
-[AI Provider Setup](#-ai-provider-configuration) •
-[Architecture](#-project-architecture) •
-[Privacy](#-privacy--security)
+## Local-first storage and network boundary
 
-</div>
+JobLint has no application backend, account, analytics, or telemetry.
 
----
+| Data | Storage | Default behavior |
+| --- | --- | --- |
+| Jobs, evaluation reports, notes, outcomes, and application events | IndexedDB (`joblint-db`, schema v6) | Local only |
+| Candidate profile and scoring preferences | `browser.storage.local` | Local only |
+| AI endpoint, key, model, and opt-in flags | `browser.storage.local` | Disabled until explicitly configured |
 
-## 🚀 Overview
+The optional AI adapter sends a bounded job snapshot directly from the browser to the endpoint selected in Settings. It does not replace the deterministic score: a successful response is stored as an advisory assessment, while malformed responses, timeouts, and network failures fall back to the local report. Automatic enhancement is off by default and requires both explicit AI enablement and the automatic-enhancement consent.
 
-**JobLint** transforms job hunting into a streamlined, data-driven workflow. Instead of manually copying job details into spreadsheets, JobLint automatically extracts postings from **LinkedIn** and **Indeed**, analyzes how well they align with your candidate profile using local heuristics and LLMs, highlights skill gaps and red flags, and tracks applications across a 6-stage Kanban board.
+## Supported platforms
 
-All job data, evaluations, notes, and profile settings are stored **100% locally** in your browser using IndexedDB.
+The shared platform registry drives content-script matches, host permissions, background tab injection, and diagnostics.
 
----
+| Platform | Configured domains | Detection approach |
+| --- | --- | --- |
+| LinkedIn | `linkedin.com` and subdomains | URL/meta/canonical signals, layered DOM selectors, JSON-LD fallback |
+| Indeed | `indeed.com`, `indeed.co.uk`, `indeed.ca`, `indeed.es`, `indeed.fr`, `indeed.de`, `indeed.it`, `indeed.nl`, `indeed.com.mx` | URL/data attributes, layered DOM selectors, JSON-LD fallback |
 
-## ✨ Features
+Job sites change frequently. If a supported page is not recognized, use **Add manually** in the popup or dashboard; the resulting record carries a manual-detection warning rather than pretending it was scraped with full confidence.
 
-### ⚡ One-Click Job Clipper & Floating Action Badge
-- **Auto-Detection**: Instantly identifies job details when browsing LinkedIn or Indeed without needing to highlight or copy text.
-- **Floating Badge**: Injects an isolated Shadow DOM badge on job pages for instant 1-click clipping to your Kanban board.
-- **Comprehensive Scraper**: Extracts title, company, location, salary ranges, full cleaned job description, job ID, and application links.
-- **Duplicate Prevention**: Detects already-saved postings and marks them with an active `Saved ✓` indicator.
+## Install and develop
 
-### 🧠 Dual-Tier Evaluation Engine
-- **Tier 1: Instant Offline Heuristics**:
-  - **Skill Tokenizer**: Matches skills against your candidate tech stack and pinpoints missing prerequisites.
-  - **Role & Seniority Alignment**: Detects job archetype (*Frontend, Backend, Full Stack, DevOps, AI/Data, Mobile*) and experience level (*Junior, Mid, Senior, Lead/Staff*).
-  - **Location Compatibility**: Dynamically scores Remote, Hybrid, or On-site requirements against your preferred location.
-  - **Red Flag Hunter**: Warns of unpaid roles, commission-only jobs, and unreasonable requirements (e.g., 5+ years required for junior positions).
-  - **Global Score & Verdict**: Generates an algorithmic score (1.0–5.0) and action verdict (🟢 *Apply*, 🟡 *Apply with caution*, 🔴 *Skip*).
-- **Tier 2: AI / LLM Deep Analysis**:
-  - Connects to **OpenRouter**, **OpenAI**, **Groq**, **MiniMax**, or **local models** (Ollama, vLLM).
-  - Generates structured, candidate-specific fit rationales, precise skill gap breakdowns, and confidence assessments.
-  - Automatic error handling with seamless fallback to heuristic scoring if network or API limits occur.
+Prerequisites: Node.js 18+ and npm.
 
-### 👤 Candidate Profile Matcher
-- Tailors evaluations directly against your profile:
-  - **Target Roles** (e.g., *Full Stack Engineer, Backend Developer*)
-  - **Skills & Tech Stack** (e.g., *TypeScript, React, Node.js, PostgreSQL, AWS*)
-  - **Location & Work Authorization** (e.g., *New York, NY / Citizen / Work Permit*)
-  - **Target Salary & Bio**
-- **Evaluation Guard**: Prompts and alerts the user to configure their profile before running evaluations, guaranteeing relevant match scores.
-
-### 📊 Fullscreen Kanban Application Board
-- **6 Pipeline Stages**: `To Apply` → `Applied` → `Assessment` → `Interviewing` → `Offer` → `Rejected`.
-- **HTML5 Drag-and-Drop**: Smooth card re-ordering and status progression.
-- **Search & Filters**: Real-time filtering by job title, company name, or keyword.
-- **Details Drawer**: Slide-out modal with full description review, notes editor, stage switcher, and direct re-evaluation.
-
-### 💾 Complete Data Portability & Backup
-- **CSV Export**: Export all jobs and evaluation data formatted for spreadsheets (Excel, Google Sheets, Notion).
-- **JSON Backup & Restore**: One-click full data export and import for transferring between browsers or computers.
-
----
-
-## 🌐 Supported Job Platforms
-
-| Platform | URL Match | Detection Capabilities |
-| :--- | :--- | :--- |
-| **LinkedIn** | `linkedin.com/jobs/*` | Full job views (`/jobs/view/<id>`), search result lists, split-pane layout, guest views, collections |
-| **Indeed** | `indeed.com`, `indeed.co.uk`, `indeed.ca`, `indeed.es`, `indeed.fr`, `indeed.de`, etc. | Single job view (`/viewjob`), search result side-drawers, server-rendered and client-rendered cards |
-
----
-
-## 🛠️ Installation & Setup
-
-### Prerequisites
-- [Node.js](https://nodejs.org/) (version 18+ recommended)
-- `npm` (version 9+)
-
-### 1. Clone & Install Dependencies
 ```bash
-git clone https://github.com/eslam0ebrahem/jobLint.git
-cd jobLint/extension
+cd extension
 npm install
-```
-
-### 2. Development Mode
-Runs the extension in live-reload mode with an isolated browser instance:
-```bash
 npm run dev
 ```
 
-### 3. Build for Production
-To build the production-ready unpacked extension:
-```bash
-npm run build
-```
-The output directory will be created at:
-```
-jobLint/extension/.output/chrome-mv3
-```
-
-To build and package a distribution `.zip` file:
-```bash
-npm run zip
-```
-The zip file will be generated at:
-```
-jobLint/extension/.output/joblint-extension-1.0.0-chrome.zip
-```
-
----
-
-## 📦 How to Load in Google Chrome
-
-1. Open Chrome and navigate to: `chrome://extensions/`
-2. Enable **Developer mode** (toggle switch in the top-right corner).
-3. Click the **Load unpacked** button.
-4. Select the directory:
-   ```
-   <path-to-jobLint>/extension/.output/chrome-mv3
-   ```
-5. The **JobLint** extension icon will now appear in your browser toolbar!
-
----
-
-## ⚙️ AI Provider Configuration
-
-JobLint works with any OpenAI-compatible API endpoint:
-
-1. Click the **JobLint** extension icon in your browser toolbar.
-2. Click the **⚙️ (Settings)** icon in the header to open the AI configuration page (`options.html`).
-3. Choose a provider preset or input custom settings:
-
-| Provider | Base URL | Model Example |
-| :--- | :--- | :--- |
-| **OpenRouter** | `https://openrouter.ai/api/v1` | `qwen/qwen3.8-27b:free`, `google/gemma-4-26b-a4b-it:free`, `openai/gpt-4o-mini` |
-| **OpenAI** | `https://api.openai.com/v1` | `gpt-4o-mini`, `gpt-4o` |
-| **Groq** | `https://api.groq.com/openai/v1` | `llama-3.3-70b-versatile`, `mixtral-8x7b-32768` |
-| **MiniMax** | `https://api.minimax.io/v1` | `MiniMax-Text-01` |
-| **Ollama (Local)** | `http://localhost:11434/v1` | `llama3.2`, `mistral` |
-
-4. Enter your **API Key** and click **Fetch Models** to test the connection and auto-populate available models.
-5. Click **Save**.
-
-> [!NOTE]
-> AI evaluation is optional. If no API key is provided, JobLint automatically utilizes its built-in heuristic evaluation engine offline.
-
----
-
-## 📁 Project Architecture
-
-```
-jobLint/extension/
-├── entrypoints/
-│   ├── background.ts          # Background service worker (messaging, auto-injection)
-│   ├── content.ts             # Content script (LinkedIn & Indeed DOM detectors)
-│   ├── popup/                 # Extension popup UI (Quick clip, evaluate active tab)
-│   ├── dashboard/             # Fullscreen Kanban board & job details drawer
-│   ├── profile/               # Candidate profile form (skills, roles, preferences)
-│   └── options/               # AI settings & provider configuration
-├── src/
-│   ├── components/            # Reusable UI components (JobCard, EvaluationCard, etc.)
-│   ├── hooks/                 # React hooks (useJobs)
-│   ├── lib/
-│   │   ├── db.ts              # IndexedDB persistence layer (idb)
-│   │   ├── ai.ts              # AI configuration, model discovery, and sanitizers
-│   │   ├── export.ts          # CSV and JSON export/import utilities
-│   │   ├── floatingBadge.ts   # Shadow DOM isolated on-page clipping badge
-│   │   ├── detectors/         # Platform scrapers (LinkedIn, Indeed, generic utils)
-│   │   └── evaluation/        # Heuristic rules, skill extraction, red flags, LLM runner (adapted from career-ops)
-│   ├── types/
-│   │   └── job.ts             # Core TypeScript interfaces & types
-│   └── styles.css             # Tailwind CSS v4 styling
-├── wxt.config.ts              # WXT build configuration & manifest declaration
-└── package.json
-```
-
----
-
-## 🧪 Development & Quality Commands
+Production builds:
 
 ```bash
-# Type check TypeScript without emitting files
-npm run compile
-
-# Run ESLint across all entrypoints and source files
+npm run compile       # tsc --noEmit
 npm run lint
-
-# Automatically fix linting issues
-npm run lint:fix
-
-# Build for Firefox
-npm run build:firefox
-npm run zip:firefox
+npm test              # Vitest domain, persistence, detector, gateway, backup, and AI tests
+npm run build         # .output/chrome-mv3
+npm run build:firefox # .output/firefox-mv2
 ```
 
----
+Load `.output/chrome-mv3` from `chrome://extensions` with Developer mode enabled. Firefox artifacts are written under `.output/firefox-mv2` and can be loaded through Firefox’s temporary add-on workflow.
 
-## 🔒 Privacy & Security
+## Optional AI setup
 
-- **Zero Remote Telemetry**: JobLint collects no analytics, tracking data, or usage metrics.
-- **Local Storage**: All job postings, candidate information, notes, and application statuses are stored strictly on your device via browser IndexedDB.
-- **Direct AI Calls**: When AI evaluation is enabled, requests are sent directly from your browser to your configured AI provider using your own API key. No intermediate proxy or relay server is used.
+Open **Settings** from the popup or dashboard and choose a provider preset or a custom OpenAI-compatible endpoint. HTTPS is required except for localhost endpoints such as Ollama. Enter a model ID or use model discovery, review the endpoint’s retention policy, then explicitly enable AI review.
 
----
+The supported presets are OpenRouter, OpenAI, Groq, MiniMax, Ollama, and a custom endpoint. Model discovery and assessment requests have bounded timeouts. The API key is stored locally in the browser profile and is sent only to the configured endpoint.
 
-## 🙏 Attributions & Acknowledgements
+## Architecture
 
-The core job evaluation algorithms and heuristic scoring rules located in [`extension/src/lib/evaluation/`](file:///Users/IslamIbrahim/Work/jobLintDev/extension/src/lib/evaluation) were adapted and inspired by the open-source project [**CareerOps**](https://github.com/career-ops-hq/career-ops) and refactored by AI to fit JobLint's standalone Chrome extension architecture, user profile schema, and offline evaluation workflow.
+```text
+LinkedIn / Indeed pages
+        │ DOM + JSON-LD + canonical detection
+        ▼
+content script ── floating badge / clip request ──┐
+                                                   ▼
+popup · dashboard · profile · options ── typed gateway ── background service worker
+                                                               │
+                         ┌─────────────────────────────┬───────────────┐
+                         ▼                             ▼               ▼
+                 IndexedDB v6 jobs/events       storage.local       optional AI
+                 identity + deduplication       profile/preferences  direct fetch
+```
 
----
+The background service worker is the only owner of persistence, evaluation orchestration, and settings writes. UI pages use `sendGatewayRequest`; they do not import the database or evaluator directly. The evaluator itself is deterministic and testable, while the AI adapter is a bounded, replaceable network boundary.
 
-## 📄 License
+### Important modules
 
-This project is licensed under the [MIT License](LICENSE).
+- `extension/entrypoints/background.ts` — gateway request handling, orchestration, events, backups, and lifecycle injection.
+- `extension/entrypoints/content.ts` — detector lifecycle and isolated badge UI.
+- `extension/entrypoints/dashboard/` — Kanban, insights, outcomes, diagnostics, and restore review.
+- `extension/src/lib/messages.ts` — typed request/event/response contract and runtime guard.
+- `extension/src/lib/db.ts` — versioned IndexedDB repository and atomic event writes.
+- `extension/src/lib/evaluation/` — local evaluator, normalization, role/skill/scoring rules, and AI adapter.
+- `extension/src/lib/detectors/` — platform registry, structured data, DOM detectors, and health diagnostics.
+- `extension/tests/` — 25 focused tests covering the domain and integration boundaries.
+
+## Data portability
+
+CSV is intended for spreadsheets and includes evaluation dimensions, risk, confidence, skills, gaps, outcomes, and notes. Fields that could be interpreted as spreadsheet formulas are prefixed safely.
+
+JSON exports use schema v2 and include jobs, events, profile, and preferences. API keys and AI configuration are intentionally excluded. v1 arrays and v1 `{ jobs: [...] }` files are accepted. Restore always previews record counts, conflicts, metadata, and validation warnings before writing.
+
+## License and attribution
+
+This project is MIT licensed. The evaluation work was informed by the open-source [CareerOps](https://github.com/career-ops-hq/career-ops) project; see [`extension/src/lib/evaluation/`](extension/src/lib/evaluation/) for the current implementation.

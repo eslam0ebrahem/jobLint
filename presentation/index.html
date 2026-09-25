@@ -244,12 +244,12 @@
 <div class="deck" id="deck">
 
   <!-- ============ 1 · TITLE ============ -->
-  <section class="slide" data-title="Title" data-time="0:16" data-script="Hi everyone — I'm Eslam, and this is JobLint: an AI job hunter and Kanban tracker that lives inside your browser. In the next five minutes: the problem, a quick demo, how it's built, and what I learned.">
-    <span class="kicker grad" data-anim style="--d:0">Chrome Extension · Manifest V3</span>
+  <section class="slide" data-title="Title" data-time="0:16" data-script="Hi everyone — I'm Eslam, and this is JobLint: a local-first job clipper and Kanban tracker that lives inside your browser. In the next five minutes: the problem, a quick demo, how it's built, and what I learned.">
+    <span class="kicker grad" data-anim style="--d:0">WXT Extension · Chrome MV3 · Firefox MV2</span>
     <h1 data-anim style="--d:1">Job<span class="grad">Lint</span></h1>
-    <p class="lead" data-anim style="--d:2">AI Job Hunter &amp; Kanban Tracker — automated job clipping, fit evaluation, skill-gap analysis, and a six-stage pipeline. All inside your browser. All 100% local.</p>
+    <p class="lead" data-anim style="--d:2">Local-first job clipping, evidence-based fit evaluation, skill-gap analysis, and a six-stage pipeline. AI review is optional and explicit.</p>
     <div class="stats" data-anim style="--d:3">
-      <div class="stat"><div class="v grad">LinkedIn</div><div class="l">+ Indeed, 6 countries</div></div>
+      <div class="stat"><div class="v grad">LinkedIn</div><div class="l">+ Indeed across 9 configured domains</div></div>
       <div class="stat"><div class="v grad">1-click</div><div class="l">Clip → Score → Track</div></div>
       <div class="stat"><div class="v grad">0</div><div class="l">Backends · accounts · telemetry</div></div>
     </div>
@@ -292,21 +292,21 @@
   </section>
 
   <!-- ============ 6 · JobLint at a glance ============ -->
-  <section class="slide" data-title="JobLint at a glance" data-time="0:29" data-script="So here's JobLint: a Chrome extension on Manifest V3 that lives directly on LinkedIn and Indeed. It detects the job you're viewing, clips it with one click, evaluates fit against your profile — instantly, offline, with an optional AI layer — and drops it into a six-stage Kanban board. And a key design decision: everything stays 100% local in your browser. No accounts, no servers, no analytics.">
+  <section class="slide" data-title="JobLint at a glance" data-time="0:29" data-script="So here's JobLint: a WXT browser extension that lives on LinkedIn and Indeed. It detects the job you're viewing, clips it with one click, evaluates fit against your profile with a deterministic local engine, and drops it into a six-stage Kanban board. AI review is available when you explicitly configure it. Jobs and events stay in IndexedDB; profile and preferences stay in local extension storage. No accounts, servers, or analytics.">
     <span class="kicker grad" data-anim style="--d:0">JobLint at a Glance</span>
     <h2 data-anim style="--d:1">Detect → Clip → Score → Track</h2>
     <div class="steps">
-      <div class="step" data-anim style="--d:2"><span class="n">1</span><h3>⚡ Auto-detect &amp; clip</h3><p>Floating badge on every LinkedIn &amp; Indeed job page. One click extracts everything.</p></div>
+      <div class="step" data-anim style="--d:2"><span class="n">1</span><h3>⚡ Auto-detect &amp; clip</h3><p>Floating badge on supported pages. One click extracts available fields and reports gaps.</p></div>
       <span class="arrow">→</span>
-      <div class="step" data-anim style="--d:3"><span class="n">2</span><h3>🧠 Evaluate the fit</h3><p>Instant offline heuristics + optional LLM layer. Score 1–5 with a clear verdict.</p></div>
+      <div class="step" data-anim style="--d:3"><span class="n">2</span><h3>🧠 Evaluate the fit</h3><p>Deterministic local evidence report with an optional AI advisory. Score 1–5.</p></div>
       <span class="arrow">→</span>
-      <div class="step" data-anim style="--d:4"><span class="n">3</span><h3>📊 Track the pipeline</h3><p>Six-stage Kanban pipeline with drag-and-drop, search, notes, and CSV/JSON export.</p></div>
+      <div class="step" data-anim style="--d:4"><span class="n">3</span><h3>📊 Track the pipeline</h3><p>Six stages with drag-and-drop, filters, insights, notes, events, and export.</p></div>
     </div>
-    <p class="lead" data-anim style="--d:5; margin-top:28px">Everything stored <b>100% locally</b> — IndexedDB, no accounts, no analytics.</p>
+    <p class="lead" data-anim style="--d:5; margin-top:28px">Local by default — jobs and events in IndexedDB, settings in local extension storage, no accounts or analytics.</p>
   </section>
 
   <!-- ============ 7 · Demo 1: floating badge ============ -->
-  <section class="slide" data-title="Demo · The floating badge" data-time="0:38" data-script="Let me show you how it feels. You open any job on LinkedIn — within a second, a floating badge appears in the corner, injected as isolated Shadow DOM so the site's own CSS can never break it. One click on 'Clip to Kanban' extracts the title, company, salary, and full cleaned description, checks for duplicates, and confirms. Already saved? The badge flips to 'In Kanban' so you never clip twice. And layered detection survives LinkedIn's dynamic layouts, plus Indeed in six countries.">
+  <section class="slide" data-title="Demo · The floating badge" data-time="0:38" data-script="Let me show you how it feels. You open any job on LinkedIn — within a second, a floating badge appears in the corner, injected as isolated Shadow DOM so the site's own CSS can never break it. One click on 'Clip to Kanban' extracts the title, company, salary, and full cleaned description, checks for duplicates, and confirms. Already saved? The badge flips to 'In Kanban' so you never clip twice. Layered detection, JSON-LD, canonical links, and clear diagnostics handle dynamic layouts; Indeed is configured across nine domains.">
     <span class="kicker grad" data-anim style="--d:0">Demo 1 · One-Click Clipper</span>
     <h2 data-anim style="--d:1">A floating badge on every job page</h2>
     <div class="browser" data-anim style="--d:2">
@@ -326,19 +326,19 @@
       </div>
     </div>
     <div class="row" data-anim style="--d:3">
-      <div class="card"><h3>🧱 Shadow DOM isolated</h3><p>Site CSS can never break or restyle the badge. Maximum z-index, fixed positioning.</p></div>
+      <div class="card"><h3>🧱 Shadow DOM isolated</h3><p>Style-isolated from the site, with an accessible fixed-position badge.</p></div>
       <div class="card"><h3>🛡️ Dedup built-in</h3><p>Already saved? The badge flips to a green <b>✓ In Kanban</b> — never clip twice.</p></div>
-      <div class="card"><h3>🌍 Layered detection</h3><p>Multiple selector fallbacks survive LinkedIn's dynamic split-panes and guest views, plus Indeed worldwide.</p></div>
+      <div class="card"><h3>🌍 Layered detection</h3><p>Multiple selector and structured-data fallbacks survive dynamic layouts; Indeed is configured across nine domains.</p></div>
     </div>
   </section>
 
   <!-- ============ 8 · Demo 2: evaluation engine ============ -->
-  <section class="slide" data-title="Demo · Dual-tier evaluation" data-time="0:40" data-script="Now the part I care most about: evaluation. Tier one is a deterministic engine that runs instantly in the browser — it matches the description against your skills, classifies role and seniority, scores location compatibility, and hunts red flags. All of it feeds a weighted score from one to five, with a verdict: Apply, Caution, or Skip. Tier two is optional: plug in any OpenAI-compatible API — even a local Ollama — and the LLM re-ranks the posting with reasoning, flagged with the AI badge. If the API fails, it silently falls back to heuristics. The score never disappears.">
+  <section class="slide" data-title="Demo · Dual-tier evaluation" data-time="0:40" data-script="Now the part I care most about: evaluation. Tier one is a deterministic engine that runs instantly in the browser — it matches the description against your skills, classifies role and seniority, scores location compatibility, and hunts red flags. All of it feeds a weighted score from one to five, with a verdict: Apply, Caution, or Skip. Tier two is opt-in: plug in any OpenAI-compatible endpoint — even a local Ollama — and the LLM adds a bounded advisory assessment, flagged with the AI badge. It never overwrites the deterministic score. If the API fails or returns malformed data, the local report remains.">
     <span class="kicker grad" data-anim style="--d:0">Demo 2 · Fit Evaluation</span>
     <h2 data-anim style="--d:1">Dual-tier evaluation: <span class="grad">heuristics + LLM</span></h2>
     <div class="scorewrap">
       <div class="scard" data-anim style="--d:2">
-        <div class="head apply"><span>🟢 Apply <span class="ai-badge">AI</span></span><span class="score">4.2 / 5.0</span></div>
+        <div class="head apply"><span>🟢 Apply <span class="ai-badge">AI advisory</span></span><span class="score">4.2 / 5.0</span></div>
         <div>
           <span class="chip in">Full Stack</span><span class="chip gr">Senior</span><span class="chip gr">Hybrid</span><span class="chip em">Location 5/5</span>
         </div>
@@ -359,11 +359,11 @@
         <div style="font-size:12.5px;color:var(--muted);line-height:1.6">Skill tokenizer · Archetype &amp; seniority detection · Location compatibility scoring · Red-flag hunter · Weighted global score</div>
       </div>
     </div>
-    <p class="lead" data-anim style="--d:4; margin-top:22px">API down or rate-limited? <b>Silent fallback</b> to heuristics — the verdict never disappears.</p>
+    <p class="lead" data-anim style="--d:4; margin-top:22px">API down, rate-limited, or malformed? <b>Safe fallback</b> to the local report — the verdict never disappears.</p>
   </section>
 
   <!-- ============ 9 · Demo 3: Kanban ============ -->
-  <section class="slide" data-title="Demo · The pipeline board" data-time="0:23" data-script="Everything lands here: a six-stage board — To Apply, Applied, Assessment, Interviewing, Offer, Rejected — with native drag-and-drop, real-time search, and a details drawer with the full description, notes, and re-evaluation. Your data comes back out as CSV for spreadsheets, or a full JSON backup and restore to move your search between machines.">
+  <section class="slide" data-title="Demo · The pipeline board" data-time="0:23" data-script="Everything lands here: a six-stage board — To Apply, Applied, Assessment, Interviewing, Offer, Rejected — with native drag-and-drop, filters, insights, outcomes, and a details drawer with evidence, notes, and event history. Your data comes back out as safe CSV, or a full JSON backup with a conflict-aware restore preview.">
     <span class="kicker grad" data-anim style="--d:0">Demo 3 · The Pipeline</span>
     <h2 data-anim style="--d:1">A six-stage pipeline board</h2>
     <div class="kboard" data-anim style="--d:2">
@@ -384,9 +384,9 @@
       </div>
     </div>
     <div class="row" data-anim style="--d:3">
-      <div class="card"><h3>🖱️ Native HTML5 drag &amp; drop</h3><p>Reorder within columns, progress across stages.</p></div>
-      <div class="card"><h3>🔎 Details drawer</h3><p>Full description, notes editor, stage switcher, re-evaluation.</p></div>
-      <div class="card"><h3>📤 CSV &amp; JSON export</h3><p>Spreadsheet-ready export, full backup &amp; restore between machines.</p></div>
+      <div class="card"><h3>🖱️ Native HTML5 drag &amp; drop</h3><p>Move jobs across the six pipeline stages.</p></div>
+      <div class="card"><h3>🔎 Details drawer</h3><p>Evidence, notes, outcomes, event history, and local/AI review.</p></div>
+      <div class="card"><h3>📤 CSV &amp; JSON export</h3><p>Safe CSV plus conflict-aware JSON backup and restore.</p></div>
     </div>
   </section>
 
@@ -398,9 +398,9 @@
   </section>
 
   <!-- ============ 11 · Architecture ============ -->
-  <section class="slide" data-title="Architecture" data-time="0:32" data-script="Architecturally, everything is wired through a background service worker. Content scripts handle DOM detection and the floating badge; the background worker owns persistence and message routing — it's the single gateway to the IndexedDB store. Popup, dashboard, profile, and settings are independent pages over the same store, so there's one source of truth. The scoring engine is pure and testable, and the LLM sits behind the same interface — AI is a plug-in, not a dependency.">
+  <section class="slide" data-title="Architecture" data-time="0:32" data-script="Architecturally, everything is wired through a background service worker. Content scripts handle detection and the floating badge; the background worker owns persistence, settings, and message routing. Popup, dashboard, profile, and options use the same typed gateway, while the gateway makes the storage boundary explicit: jobs and events in IndexedDB, profile and preferences in local extension storage. The scoring engine is pure and testable, and the LLM sits behind a bounded adapter — AI is a plug-in, not a dependency.">
     <span class="kicker grad" data-anim style="--d:0">How · Architecture</span>
-    <h2 data-anim style="--d:1">Five entrypoints, one gateway, one source of truth</h2>
+    <h2 data-anim style="--d:1">Five entrypoints, one gateway, explicit storage boundaries</h2>
     <div class="diagram" data-anim style="--d:2">
       <div class="drow">
         <div class="dbox"><div class="t">🌐 LinkedIn / Indeed</div><div class="d">Job sites — dynamic, redesigned often</div></div>
@@ -411,9 +411,9 @@
       </div>
       <span class="darrow down">↓</span>
       <div class="drow">
-        <div class="dbox hero"><div class="t">🗄️ IndexedDB <small class="note">(one store)</small></div><div class="d">Jobs · evaluations · notes · profile · AI config — the single source of truth</div></div>
+        <div class="dbox hero"><div class="t">🗄️ IndexedDB <small class="note">(v6)</small></div><div class="d">Jobs · evaluations · notes · outcomes · application events</div></div>
         <span class="darrow">⇄</span>
-        <div class="dbox"><div class="t">🖥️ Popup · Dashboard · Profile · Options</div><div class="d">React pages over the same store</div></div>
+        <div class="dbox"><div class="t">🖥️ Popup · Dashboard · Profile · Options</div><div class="d">React pages over one typed gateway</div></div>
         <span class="darrow">⇄</span>
         <div class="dbox"><div class="t">🧠 LLM API (optional)</div><div class="d">Any OpenAI-compatible endpoint, direct calls, own key</div></div>
       </div>
@@ -422,18 +422,18 @@
   </section>
 
   <!-- ============ 12 · Tech stack ============ -->
-  <section class="slide" data-title="Tech stack" data-time="0:25" data-script="The stack: WXT as the bundler — hot reload, auto-manifest, Firefox builds for free. React 19 with strict TypeScript, Tailwind v4, and a tiny wrapper over IndexedDB. Deliberately no state-management library — React state plus one persistence hook covered everything. Zero backend, zero telemetry; AI requests go directly from the browser using your own key.">
+  <section class="slide" data-title="Tech stack" data-time="0:25" data-script="The stack: WXT as the bundler — hot reload, generated host permissions, and Chrome/Firefox builds. React 19 with typed strict TypeScript, Tailwind v4, and a small promise wrapper over IndexedDB. Deliberately no state-management library — React state plus one gateway-backed persistence hook covers the surfaces. Zero backend, zero telemetry; optional AI requests go directly from the browser using your own key.">
     <span class="kicker grad" data-anim style="--d:0">How · The Stack</span>
     <h2 data-anim style="--d:1">Modern stack, <span class="grad">zero backend</span></h2>
     <div class="grid6" data-anim style="--d:2">
       <div class="tech"><div class="tt">⚡ WXT <small class="note">0.21</small></div><div class="td">Extension bundler: hot reload, auto-manifest, Firefox builds</div></div>
-      <div class="tech"><div class="tt">⚛️ React <small class="note">19</small></div><div class="td">All five entrypoints; React state only — no state library</div></div>
-      <div class="tech"><div class="tt">🛡️ TypeScript <small class="note">5.9</small></div><div class="td">Strict types end-to-end; tsc --noEmit + ESLint clean</div></div>
+      <div class="tech"><div class="tt">⚛️ React <small class="note">19</small></div><div class="td">Four React surfaces over the gateway; no state library</div></div>
+      <div class="tech"><div class="tt">🛡️ TypeScript <small class="note">5.9</small></div><div class="td">Typed gateway; compile, lint, and 25 focused tests cover the boundaries</div></div>
       <div class="tech"><div class="tt">🎨 Tailwind <small class="note">v4</small></div><div class="td">CSS-first config via Vite plugin, shared styles</div></div>
-      <div class="tech"><div class="tt">🗄️ idb + IndexedDB</div><div class="td">Tiny promise wrapper; one job store, versioned schema</div></div>
+      <div class="tech"><div class="tt">🗄️ idb + IndexedDB</div><div class="td">Promise wrapper; versioned jobs/events stores with identity deduplication</div></div>
       <div class="tech"><div class="tt">🔌 OpenAI-compatible API</div><div class="td">OpenRouter · OpenAI · Groq · MiniMax · Ollama — direct, own key</div></div>
     </div>
-    <p class="lead" data-anim style="--d:3; margin-top:22px">Built on <b>Manifest V3</b> · permissions: activeTab, storage, tabs, scripting · zero remote calls besides your AI provider.</p>
+    <p class="lead" data-anim style="--d:3; margin-top:22px">Chrome Manifest V3 / Firefox MV2 · permissions: activeTab, storage, tabs, scripting · zero remote calls besides your AI provider.</p>
   </section>
 
   <!-- ============ 13 · Insights ============ -->
@@ -448,14 +448,14 @@
   </section>
 
   <!-- ============ 14 · Closing ============ -->
-  <section class="slide" data-title="Thanks" data-time="0:17" data-script="JobLint is open source, MIT-licensed, and installs in two minutes. What's next: Chrome Web Store release, automatic evaluation on clip, and shipped Firefox builds. If you've ever lost track of a job application, this one's for you. Thanks!">
+  <section class="slide" data-title="Thanks" data-time="0:17" data-script="JobLint is open source, MIT-licensed, and installs in two minutes. Automatic local evaluation happens on clip; optional AI review stays off until you choose it. What's next: store packaging, more detector fixtures, and user feedback. If you've ever lost track of a job application, this one's for you. Thanks!">
     <span class="kicker grad" data-anim style="--d:0">Open Source · MIT</span>
     <h1 data-anim style="--d:1">Stop applying blind.<br><span class="grad">Start tracking smart.</span></h1>
-    <p class="lead" data-anim style="--d:2">What's next: Chrome Web Store release · auto-evaluation on clip · shipped Firefox builds.</p>
+    <p class="lead" data-anim style="--d:2">What's next: store packaging · more detector fixtures · user feedback. Local evaluation is already automatic on clip; AI is opt-in.</p>
     <div class="row" data-anim style="--d:3">
       <div class="card" style="text-align:center"><div class="ico">⚡</div><h3>Install in 2 min</h3><p>Load unpacked from a single production build.</p></div>
       <div class="card" style="text-align:center"><div class="ico">🧠</div><h3>Works without AI</h3><p>Deterministic engine runs fully offline.</p></div>
-      <div class="card" style="text-align:center"><div class="ico">🔒</div><h3>100% private</h3><p>Local-first, zero telemetry, your own keys.</p></div>
+      <div class="card" style="text-align:center"><div class="ico">🔒</div><h3>Local-first</h3><p>Local data, zero telemetry, optional direct AI with your own key.</p></div>
     </div>
     <h2 data-anim style="--d:4; margin-top:40px; font-size:34px;">Thanks! <span class="grad">Questions?</span></h2>
   </section>
